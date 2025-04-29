@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		18DE6C012DB6BA620010662C /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 18DE6C002DB6BA620010662C /* SQLite */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		18DE6B9E2DB6B7650010662C /* photoGallery.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = photoGallery.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				18DE6C012DB6BA620010662C /* SQLite in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = photoGallery;
 			packageProductDependencies = (
+				18DE6C002DB6BA620010662C /* SQLite */,
 			);
 			productName = photoGallery;
 			productReference = 18DE6B9E2DB6B7650010662C /* photoGallery.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = 18DE6B952DB6B7650010662C;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				18DE6BFF2DB6BA620010662C /* XCRemoteSwiftPackageReference "SQLite" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 18DE6B9F2DB6B7650010662C /* Products */;
 			projectDirPath = "";
@@ -320,6 +329,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		18DE6BFF2DB6BA620010662C /* XCRemoteSwiftPackageReference "SQLite" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stephencelis/SQLite.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.15.3;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		18DE6C002DB6BA620010662C /* SQLite */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 18DE6BFF2DB6BA620010662C /* XCRemoteSwiftPackageReference "SQLite" */;
+			productName = SQLite;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 18DE6B962DB6B7650010662C /* Project object */;
 }
