@@ -7,12 +7,12 @@
 
 import SwiftUI
 
-struct BulkEdit: View {
+struct BulkEditView: View {
     var body: some View {
         Text("bulk edit")
     }
 }
 
 #Preview {
-    BulkEdit()
+    BulkEditView()
 }

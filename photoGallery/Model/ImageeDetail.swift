@@ -6,17 +6,6 @@
 //
 
 import Foundation
-//struct ImageeDetail:Identifiable{
-//    var id: Int
-//    var path: String
-//    var is_Sync: Bool
-//    var capture_date: Date
-//    var event_date: Date //Event Date
-//    var last_modified: Date
-//    var location: Locationn
-//    var events: [Eventt]
-//    var persons: [Personn]
-//}
 
 struct ImageeDetail: Identifiable {
     var id: Int
@@ -56,7 +45,7 @@ enum ImgesData {
             Eventt(Id: 2, Name: "Wedding")
         ],
         persons: [
-            Personn(Id: 1, Name: "Aliya", Gender: "Female", Path: "p8"),
+            Personn(Id: 1, Name: "Moon", Gender: "Female", Path: "p19"),
             Personn(Id: 2, Name: "Salman", Gender: "Male", Path: "p12"),
             Personn(Id: 3, Name: "Umama", Gender: "Female", Path: "p18")
         ]
@@ -73,7 +62,7 @@ enum ImgesData {
             Eventt(Id: 6, Name: "Wedding")
         ],
         persons: [
-            Personn(Id: 6, Name: "Farhan", Gender: "M", Path: "p16"),
+            Personn(Id: 6, Name: "Shahid", Gender: "M", Path: "p20"),
             Personn(Id: 7, Name: "Salman", Gender: "M", Path: "p9"),
             Personn(Id: 8, Name: "Raza", Gender: "M", Path: "p2"),
             Personn(Id: 9, Name: "Saim", Gender: "M", Path: "p1")
@@ -90,7 +79,7 @@ enum ImgesData {
             Eventt(Id: 3, Name: "Ceremony")
         ],
         persons: [
-            Personn(Id: 4, Name: "Sir Noman", Gender: "M", Path: "p3")
+            Personn(Id: 4, Name: "Shahid Afridi", Gender: "M", Path: "p21")
         ]
     ),ImageeDetail(
         id: 3,

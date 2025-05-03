@@ -518,7 +518,7 @@ struct SearchView: View {
     @State private var selectedEvents: [String] = []
     @State private var selectedDates: [Date] = []
     @State private var captureDate = Date()
-    @State private var events = ["Birthday Party", "Eid", "Conference", "Independence Day"]
+    @State private var events = [Eventt]()
     @State private var locationNameInput = ""
     @State private var selectedLocationNames: [String] = []
     @State private var navigateToPicturesView = false
@@ -550,6 +550,7 @@ struct SearchView: View {
         }
         .onAppear {
             navBarState.isHidden = true
+            events = viewModel.getAllEvents()
         }
         .onDisappear {
             navBarState.isHidden = false
@@ -581,7 +582,14 @@ struct SearchView: View {
         VStack(alignment: .leading) {
             SectionHeader("Gender")
             HStack {
-                RadioButton(selectedText: $selectedGender, text: "Male")
+                RadioButton(selectedText: Binding(
+                    get: { selectedGender ?? "" },
+                    set: { newValue in
+                        if !selectedGender.isEmpty {
+                            selectedGender = newValue
+                        }
+                    }
+                ).genderBinding(), text: "Male")
                 RadioButton(selectedText: $selectedGender, text: "Female")
             }
         }
@@ -591,10 +599,10 @@ struct SearchView: View {
     private var eventSection: some View {
         VStack(alignment: .leading) {
             SectionHeader("Event")
-            ForEach(events, id: \.self) { event in
+            ForEach(events, id: \.self.Id) { event in
                 HStack {
-                    Toggle(isOn: bindingForEvent(event)) {
-                        Text(event)
+                    Toggle(isOn: bindingForEvent(event.Name)) {
+                        Text(event.Name)
                     }
                 }
             }
@@ -604,7 +612,7 @@ struct SearchView: View {
     // Date Section
     private var dateSection: some View {
         VStack(alignment: .leading) {
-            SectionHeader("Capture Date")
+            SectionHeader("Event Date")
             HStack {
                 DatePicker("", selection: $captureDate, displayedComponents: .date)
                     .labelsHidden()
@@ -787,6 +795,7 @@ struct SearchView: View {
     private func performSearch() {
         let genders = selectedGender.isEmpty ? [] : [selectedGender]
         Task{
+            print(genders)
             await viewModel.performSearch(
                 personNames: selectedNames,
                 genders: genders,

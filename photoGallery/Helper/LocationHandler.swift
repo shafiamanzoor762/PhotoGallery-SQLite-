@@ -141,20 +141,22 @@ init(dbHandler: DBHandler) {
             
             for imageRow in try db.prepare(imageQuery) {
                 // Get location name (use "Unknown Location" if nil)
-                let locationName = imageRow[dbHandler.locationTable[dbHandler.locationName]] ?? "Unknown Location"
-                
-                // Create GalleryImage with just the essential data
-                let galleryImage = GalleryImage(
-                    id: imageRow[dbHandler.imageTable[dbHandler.imageId]],
-                    path: imageRow[dbHandler.imageTable[dbHandler.imagePath]]
-                )
-                
-                // Add to dictionary
-                if result[locationName] == nil {
-                    result[locationName] = [galleryImage]
-                } else {
-                    result[locationName]?.append(galleryImage)
+                if let locationname = imageRow[dbHandler.locationTable[dbHandler.locationName]], !locationname.isEmpty {
+                    
+                    // Create GalleryImage with just the essential data
+                    let galleryImage = GalleryImage(
+                        id: imageRow[dbHandler.imageTable[dbHandler.imageId]],
+                        path: imageRow[dbHandler.imageTable[dbHandler.imagePath]]
+                    )
+                    
+                    // Add to dictionary
+                    if result[locationname] == nil {
+                        result[locationname] = [galleryImage]
+                    } else {
+                        result[locationname]?.append(galleryImage)
+                    }
                 }
+                
             }
             
             return result.isEmpty ? nil : result

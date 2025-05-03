@@ -33,7 +33,7 @@ struct Cover2: View {
 
         ZStack {
             Color.white
-                .clipShape(RoundedCorner(radius: 40, corners: [.topLeft, .topRight]))
+                .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight]))
             
             VStack {
                 
@@ -46,17 +46,11 @@ struct Cover2: View {
                 if TabviewName == "Search" {
                     SearchView()
                 }
-                if TabviewName == "Setting" {
-                    Cover3()
+                if TabviewName == "Bulk Edit" {
+                    BulkEditView()
                 }
-                if TabviewName == "Details" {
-                    Cover3()
-                }
-                if TabviewName == "Edit" {
-                    Cover3()
-                }
-                if TabviewName == "Delete" {
-                    Cover3()
+                if TabviewName == "Undo Changes" {
+                    UndoChangesView()
                 }
             }
             //.padding(.top)

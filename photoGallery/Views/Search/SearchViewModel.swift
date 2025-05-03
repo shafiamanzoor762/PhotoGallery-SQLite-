@@ -15,9 +15,11 @@ class SearchModelView: ObservableObject {
     @Published var error: Error?
     
     private let searchHandler: SearchHandler
+    private let eventHandler: EventHandler
     
     init() {
         self.searchHandler = SearchHandler(dbHandler: DBHandler())
+        self.eventHandler = EventHandler(dbHandler: DBHandler())
     }
     
     func performSearch(
@@ -57,5 +59,9 @@ class SearchModelView: ObservableObject {
                 }
             }
         }
+    }
+    
+    func getAllEvents() -> [Eventt]{
+        return eventHandler.fetchAllEvents()
     }
 }

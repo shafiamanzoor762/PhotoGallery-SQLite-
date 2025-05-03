@@ -9,9 +9,9 @@ import Foundation
 import UIKit
 
 class ApiHandler{
-//    public static let baseUrl = "http://192.168.1.14:5000/"
+    public static let baseUrl = "http://192.168.1.13:5000/"
     
-    public static let baseUrl = "http://192.168.217.208:5000/"
+//    public static let baseUrl = "http://192.168.217.208:5000/"
     
     // Images
     public static let imagesUrl = "\(ApiHandler.baseUrl)images/"

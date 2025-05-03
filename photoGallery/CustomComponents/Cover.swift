@@ -311,6 +311,13 @@
 import SwiftUI
 import AVFoundation
 
+enum AppRoute: Hashable {
+    case search
+    case sync
+    case bulkEdit
+    case undoChanges
+}
+
 struct Cover: View {
     let images: [String] = ["BabyGirl", "BabyGirl", "BabyGirl", "BabyGirl"]
     @State var viewName: String = "Label"
@@ -427,7 +434,7 @@ struct Cover: View {
     private var contentArea: some View {
         ZStack {
             Color.white
-                .clipShape(RoundedCorner(radius: 40, corners: [.topLeft, .topRight]))
+                .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight]))
             
             VStack {
                 currentView
@@ -527,13 +534,13 @@ struct Cover: View {
     }
     
     private func bulkEditAction() {
-        path.append("BulkEdit")
+        path.append("Bulk Edit")
         navBarState.isHidden = true
         dismiss()
     }
     
     private func undoChangesAction() {
-        path.append("UndoChanges")
+        path.append("Undo Changes")
         navBarState.isHidden = true
         dismiss()
     }

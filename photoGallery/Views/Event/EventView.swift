@@ -86,13 +86,13 @@ struct EventView: View {
                 }
             }
 //            .navigationTitle("Events")
-//            .toolbar {
-//                ToolbarItem(placement: .navigationBarTrailing) {
-//                    Button(action: viewModel.refresh) {
-//                        Image(systemName: "arrow.clockwise")
-//                    }
-//                }
-//            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: viewModel.refresh) {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+            }
         }
     }
     

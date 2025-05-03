@@ -42,26 +42,16 @@ struct UndoChangesView: View {
             
             // Top Bar
             HStack {
-                Text("Undo Changes")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
+//                Text("Undo Changes")
+//                    .font(.largeTitle)
+//                    .fontWeight(.bold)
+//                    .foregroundColor(.white)
                 
                 Spacer()
                 
-                Button(action: {
-                    // Handle Undo All action
-                }) {
-                    Text("Undo All")
-                        .font(.headline)
-                        .foregroundColor(Defs.seeGreenColor)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.white)
-                        .clipShape(Capsule())
-                }
+                ButtonWhite(title: "Undo All", action: {})
             }
-            .padding()
+            .padding(10)
             .background(Defs.seeGreenColor)
             .cornerRadius(20, corners: [.bottomLeft, .bottomRight])
             
@@ -85,35 +75,9 @@ struct UndoChangesView: View {
                             
                             // Buttons
                             VStack(spacing: 10) {
-                                Button(action: {
-                                    // View button action
-                                }) {
-                                    Text("View")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .frame(width: 120, height: 40)
-                                        .background(Defs.seeGreenColor)
-                                        .cornerRadius(20)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 20)
-                                                .stroke(Color.black, lineWidth: 1)
-                                        )
-                                }
+                                ButtonOutline(title: "View", action: {})
+                                ButtonOutline(title: "Undo", action: {})
                                 
-                                Button(action: {
-                                    // Undo button action
-                                }) {
-                                    Text("Undo")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .frame(width: 120, height: 40)
-                                        .background(Defs.seeGreenColor)
-                                        .cornerRadius(20)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 20)
-                                                .stroke(Color.black, lineWidth: 1)
-                                        )
-                                }
                             }
                             .padding(.trailing)
                         }

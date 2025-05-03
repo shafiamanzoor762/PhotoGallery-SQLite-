@@ -26,14 +26,18 @@ struct EditPersonCardView: View {
                         .font(.caption)
                     
                     
-                    TextField("Enter name", text: Binding(
-                        get: { person.Name },
-                        set: { newValue in
-                            if !person.Name.isEmpty {
-                                person.Name = newValue
-                            }
-                        }
-                    )).frame(maxWidth: 100) // Set width and height
+                    TextField("Enter name", text: $person.Name
+                              
+//                                Binding(
+//                        get: { person.Name },
+//                        set: { newValue in
+//                            if !person.Name.isEmpty {
+//                                person.Name = newValue
+//                            }
+//                        }
+//                    )
+                              
+                    ).frame(maxWidth: 100) // Set width and height
                         .frame(height: 20).font(.caption)
                         .background(Color.clear)
                         //.border(.gray, width: 1)
@@ -49,23 +53,25 @@ struct EditPersonCardView: View {
 //                    VStack{
                         
                         RadioButton(selectedText: Binding(
-                            get: { person.Gender ?? ""},
+                            get: { person.Gender},
                             set: { newValue in
                                 if !person.Gender.isEmpty {
                                     person.Gender = newValue
                                 }
                             }
-                        ), text: "Male", foregroundColor: Defs.seeGreenColor).font(.caption)
+                        ).genderBinding(), text: "Male", foregroundColor: Defs.seeGreenColor).font(.caption)
                         
                         RadioButton(selectedText: Binding(
-                            get: { person.Gender ?? ""},
+                            get: { person.Gender},
                             set: { newValue in
                                 if !person.Gender.isEmpty {
                                     person.Gender = newValue
                                 }
                             }
-                        ), text: "Female", foregroundColor: Defs.seeGreenColor).font(.caption2)
+                        ).genderBinding(), text: "Female", foregroundColor: Defs.seeGreenColor).font(.caption2)
 //                    }
+                    
+                    
                 }
             }
             .padding(2)

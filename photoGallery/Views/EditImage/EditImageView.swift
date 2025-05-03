@@ -9,9 +9,15 @@ import SwiftUI
 
 struct EditImageView: View {
     @StateObject private var viewModel: EditImageViewModel
+    
     @State private var showPopup = false
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var selectedEvent: Eventt?
+    
+    @State private var showAddEventDialog = false
+//    @State private var showErrorAlert = false
+//       @State private var errorMessage = ""
     
     let columns = [
         GridItem(.flexible(), spacing: 10),
@@ -50,14 +56,16 @@ struct EditImageView: View {
                 }
                 
                 // Save Button
-                Button(action: saveChanges) {
-                    Text("Save Changes")
-                        .frame(width: 150, height: 40)
-                        .background(Defs.seeGreenColor)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                .padding(.top)
+//                Button(action: saveChanges) {
+//                    Text("Save Changes")
+//                        .frame(width: 150, height: 40)
+//                        .background(Defs.seeGreenColor)
+//                        .foregroundColor(.white)
+//                        .cornerRadius(10)
+//                }
+//                .padding(.top)
+                
+                ButtonWhite(title: "Save Changes", action: saveChanges)
             }
             .padding(20)
             
@@ -73,11 +81,41 @@ struct EditImageView: View {
                 personsPopup
             }
         }
-        .alert("Error", isPresented: $showAlert) {
-            Button("OK", role: .cancel) { }
+        .onAppear(){
+            print(viewModel.allEvents.count)
+        }
+        .alert("Alert", isPresented: $showAlert) {
+            Button("OK", role: .cancel) {}
         } message: {
             Text(alertMessage)
         }
+        
+        
+        .alert("Add New Event", isPresented: $showAddEventDialog) {
+            TextField("Event Name", text: $viewModel.inputEvent)
+                .frame(maxWidth: 150, maxHeight: 50)
+                .font(.body)
+                .background(Defs.seeGreenColor)
+                .border(.gray, width: 1)
+                .foregroundColor(.white)
+                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.white, lineWidth: 1))
+            
+            Button("Cancel", role: .cancel) {
+                viewModel.inputEvent = ""
+            }
+            
+            Button("Add") {
+                addEvent()
+            }
+        } message: {
+            Text("Enter the name for the new event")
+        }
+//        .alert("Alert", isPresented: $showAlert) {
+//            Button("OK", role: .cancel) {}
+//        } message: {
+//            Text(alertMessage)
+//        }
+        
         .background(Defs.seeGreenColor)
     }
     
@@ -158,27 +196,62 @@ struct EditImageView: View {
     
     private var eventSection: some View {
         HStack {
-            Text("Event")
+            Text("Select Events")
                 .font(.headline)
                 .foregroundColor(.white)
             Spacer()
+            
+            
+            VStack{
+//                Text("Select Events")
+//                    .font(.headline)
+                
+                Spacer()
+                
+                HStack {
+                    Picker("Event", selection: $selectedEvent) {
+                        ForEach(viewModel.allEvents, id: \.self.Id) { event in
+                            Text(event.Name).tag(event)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
+                    .onChange(of: selectedEvent ?? Eventt(Id: 0, Name: "")) { newEvent in
+                        addEvent(newEvent)
+                    }
+                }
+                selectedItemsView(items: viewModel.image.events, removeAction: removeEvent)
+            }
+            
+            Button(action: { showAddEventDialog = true }) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 24))
+                        .foregroundColor(.white)
+                        .background(Defs.seeGreenColor)
+                        .clipShape(Circle())
+                        .shadow(radius: 4)
+                }
+                .padding()
 
             
-            TextField("Enter Event Name", text: Binding(
-                get: { viewModel.image.events.first?.Name ?? "Gala" },
-                set: { newValue in
-//                    if !viewModel.image.events.isEmpty{
-//                        viewModel.image.events.first.Name = newValue
+            
+            
+//            TextField("Enter Event Name", text: Binding(
+//                get: { viewModel.inputEvent ?? "" },
+//                set: { newValue in
+//                    if !viewModel.inputEvent.isEmpty{
+//                        viewModel.inputEvent = newValue
 //                    }
-                }
-            ))
-            .frame(maxWidth: 150, maxHeight: 50)
-            .font(.body)
-                .background(Defs.seeGreenColor)
-                .border(.gray, width: 1)
-                .foregroundColor(.white)
-                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.white, lineWidth: 1))
+//                }
+//            ))
+//            .frame(maxWidth: 150, maxHeight: 50)
+//            .font(.body)
+//                .background(Defs.seeGreenColor)
+//                .border(.gray, width: 1)
+//                .foregroundColor(.white)
+//                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.white, lineWidth: 1))
+            
         }
+        .frame(height: 50)
     }
     
     private var dateSections: some View {
@@ -190,15 +263,19 @@ struct EditImageView: View {
                 
                 Spacer()
                 
-                TextField("Enter Location", text: Binding(
-                    get: { viewModel.image.location.Name },
-                    set: { newValue in
-                        if !viewModel.image.location.Name.isEmpty{
-                            viewModel.image.location.Name = "BIIT"
-                        }
-                    }
-                )).frame(maxWidth: 150, maxHeight: 50)
-                .font(.body)
+                TextField("Enter Location", text: $viewModel.image.location.Name
+//                            Binding(
+//                    get: { viewModel.image.location.Name },
+//                    set: { newValue in
+//                        if !viewModel.image.location.Name.isEmpty{
+//                            viewModel.image.location.Name = newValue
+//                        }
+//                    }
+//                )
+                          
+                )
+                    .frame(maxWidth: 150, maxHeight: 50)
+                    .font(.body)
                     .background(Defs.seeGreenColor)
                     .border(.gray, width: 1)
                     .foregroundColor(.white)
@@ -272,6 +349,7 @@ struct EditImageView: View {
         }
     }
     
+    
     // MARK: - Actions
     
     private func saveChanges() {
@@ -284,6 +362,52 @@ struct EditImageView: View {
             showAlert = true
         }
     }
+    
+    private func addEvent() {
+        viewModel.addNewEvent { success in
+            if success {
+                alertMessage = "Event added successfully!"
+            } else {
+                alertMessage = viewModel.error?.localizedDescription ?? "Failed to add event"
+            }
+            showAlert = true
+        }
+    }
+    
+    private func selectedItemsView(items: [Eventt], removeAction: @escaping (Eventt) -> Void) -> some View {
+        ScrollView(.horizontal) {
+            HStack {
+                ForEach(items, id: \.self) { item in
+                    HStack {
+                        Text(item.Name)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.gray.opacity(0.2))
+                            .foregroundColor(Defs.seeGreenColor)
+                            .cornerRadius(12)
+                        Button(action: { removeAction(item) }) {
+                            Image(systemName: "xmark")
+                                .foregroundColor(Defs.seeGreenColor)
+                        }
+                    }
+                    .frame(width: 120, height: 35)
+                    .background(.white)
+                    .cornerRadius(25)
+                }
+            }
+        }
+    }
+    
+    private func removeEvent(_ event: Eventt) -> Void {
+        viewModel.image.events.removeAll { $0.Id == event.Id }
+    }
+    
+    private func addEvent(_ event: Eventt) {
+        guard !viewModel.image.events.contains(where: { $0.Id == event.Id }) else { return }
+        viewModel.image.events.append(event)
+        selectedEvent = nil // Reset selection
+    }
+    
 }
 
 
@@ -329,124 +453,3 @@ extension Binding where Value == String {
 
 //=========================================
 
-
-
-
-
-
-
-//struct EditImageView: View {
-//    @StateObject private var viewModel: EditImageViewModel
-//    @State private var showPopup = false
-//    @State private var showAlert = false
-//    @State private var alertMessage = ""
-//    
-//    let columns = [
-//        GridItem(.flexible(), spacing: 10),
-//        GridItem(.flexible(), spacing: 10)
-//    ]
-//    
-//    init(image: ImageeDetail) {
-//        _viewModel = StateObject(wrappedValue: EditImageViewModel(image: image))
-//    }
-//    
-//    var body: some View {
-//        ZStack {
-//            VStack {
-//                // Image preview or path display
-//                Text("Editing: \(viewModel.image.path)")
-//                    .fontWeight(.bold)
-//                    .foregroundColor(.white)
-//                
-//                Form {
-//                    // Persons Section
-//                    Section(header: Text("People").foregroundColor(.white)) {
-//                        ForEach($viewModel.image.persons, id:\.self.Id) { $person in
-//                            HStack {
-//                                PersonImageView(imagePath: person.Path)
-//                                TextField("Name", text: $person.Name)
-//                                Picker("Gender", selection: $person.Gender) {
-//                                    Text("Male").tag("M")
-//                                    Text("Female").tag("F")
-//                                    Text("Unknown").tag("U")
-//                                }
-//                                .pickerStyle(MenuPickerStyle())
-//                            }
-//                        }
-//                    }
-//                    
-//                    // Events Section
-//                    Section(header: Text("Events").foregroundColor(.white)) {
-//                        ForEach($viewModel.image.events, id:\.self.Id) { $event in
-//                            TextField("Event Name", text: $event.Name)
-//                        }
-//                    }
-//                    
-//                    // Location Section
-//                    Section(header: Text("Location").foregroundColor(.white)) {
-//                        TextField("Location Name", text: $viewModel.image.location.Name)
-//                        HStack {
-//                            Text("Latitude: \(viewModel.image.location.Lat ?? 0)")
-//                            Text("Longitude: \(viewModel.image.location.Lon ?? 0)")
-//                        }
-//                    }
-//                    
-//                    // Dates Section
-//                    Section(header: Text("Dates").foregroundColor(.white)) {
-//                        DatePicker("Event Date", selection: $viewModel.image.event_date, displayedComponents: .date)
-//                        DatePicker("Capture Date", selection: $viewModel.image.capture_date, displayedComponents: .date)
-//                    }
-//                }
-//                .scrollContentBackground(.hidden)
-//                .background(Defs.seeGreenColor)
-//                
-//                // Save Button
-//                Button(action: saveChanges) {
-//                    Text("Save Changes")
-//                        .frame(maxWidth: .infinity)
-//                        .padding()
-//                        .background(Color.blue)
-//                        .foregroundColor(.white)
-//                        .cornerRadius(10)
-//                }
-//                .padding()
-//            }
-//            
-//            // Loading Indicator
-//            if viewModel.isLoading {
-//                ProgressView()
-//                    .scaleEffect(1.5)
-//                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-//                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-//                    .background(Color.black.opacity(0.4))
-//            }
-//        }
-//        .background(Defs.seeGreenColor)
-//        .alert("Error", isPresented: $showAlert) {
-//            Button("OK", role: .cancel) { }
-//        } message: {
-//            Text(alertMessage)
-//        }
-//    }
-//    
-//    private func saveChanges() {
-//        viewModel.saveChanges { success in
-//            alertMessage = success ? "Changes saved successfully!" :
-//                (viewModel.error?.localizedDescription ?? "Failed to save changes")
-//            showAlert = true
-//        }
-//    }
-//}
-
-// MARK: - Helper Views
-//struct PersonImageView: View {
-//    let imagePath: String
-//    
-//    var body: some View {
-//        Image(imagePath)
-//            .resizable()
-//            .scaledToFill()
-//            .frame(width: 40, height: 40)
-//            .clipShape(Circle())
-//    }
-//}

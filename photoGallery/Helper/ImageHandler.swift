@@ -320,8 +320,13 @@ class ImageHandler {
                 
                 // Handle location
                 if let location = location, location.Lat != nil, location.Lon != nil {
+                    
+//                    let locationQuery = dbHandler.locationTable.filter(
+//                        dbHandler.latitude == location.Lat && dbHandler.longitude == location.Lon
+//                    )
+                    
                     let locationQuery = dbHandler.locationTable.filter(
-                        dbHandler.latitude == location.Lat && dbHandler.longitude == location.Lon
+                        dbHandler.locationName == location.Name
                     )
                     
                     let locationId: Int
@@ -428,8 +433,8 @@ class ImageHandler {
                     let person = Personn(
                         Id: personRow[dbHandler.personId],
                         Name: personRow[dbHandler.personName] ?? "",
-                        Gender: personRow[dbHandler.personPath] ?? "",
-                        Path: personRow[dbHandler.personGender] ?? ""
+                        Gender: personRow[dbHandler.personGender] ?? "",
+                        Path: personRow[dbHandler.personPath] ?? ""
                     )
                     persons.append(person)
                 }

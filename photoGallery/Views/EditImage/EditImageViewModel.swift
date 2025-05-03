@@ -59,14 +59,20 @@ import SwiftUI
 // MARK: - ViewModel
 class EditImageViewModel: ObservableObject {
     @Published var image: ImageeDetail
+    @Published var inputEvent: String = ""
+    @Published var allEvents = [Eventt]()
+    
     @Published var isLoading = false
     @Published var error: Error?
     
     private let imageHandler: ImageHandler
+    private let eventHandler: EventHandler
     
     init(image: ImageeDetail) {
         self.image = image
         self.imageHandler = ImageHandler(dbHandler: DBHandler())
+        self.eventHandler = EventHandler(dbHandler: DBHandler())
+        allEvents = eventHandler.fetchAllEvents()
     }
     
     func saveChanges(completion: @escaping (Bool) -> Void) {
@@ -76,6 +82,17 @@ class EditImageViewModel: ObservableObject {
         let persons = image.persons.isEmpty ? nil : image.persons
         let eventNames = image.events.isEmpty ? nil : image.events.map { $0.Name }
         let eventDate = image.event_date.toDatabaseString()
+        
+        
+        let lat = image.location.Lat.isNaN ? nil : 0.0
+        let lon = image.location.Lon.isNaN ? nil : 0.0
+        
+        image.location.Lat = lat ?? 0.0
+        image.location.Lon = lon ?? 0.0
+        
+//        print("Location Name:\(image.location.Name), \(image.location.Lat), \(image.location.Lon)")
+        
+        print("Persons:\(image.persons)")
         
         imageHandler.editImage(
             imageId: image.id,
@@ -97,4 +114,22 @@ class EditImageViewModel: ObservableObject {
             }
         }
     }
+    
+    func addNewEvent(completion: @escaping (Bool) -> Void){
+        eventHandler.addEventIfNotExists(eventName: inputEvent) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let newEvent):
+                        self.allEvents.append(newEvent)
+                        self.inputEvent = ""
+                        completion(true)
+                case .failure(let error):
+                    self.error = error
+                        completion(false)
+                }
+            }
+        }
+    }
+
+    
 }
