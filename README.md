@@ -7,7 +7,7 @@ A smart photo gallery application built using **SwiftUI** and **SQLite**.
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-iOS-blue?logo=swift)](https://developer.apple.com/xcode/swiftui/)
 \[![SQLite](https://img.shields.io/badge/SQLite-Integrated-lightgrey?logo=sqlite)]
 \[![Platform](https://img.shields.io/badge/Platform-iOS-lightblue?logo=apple)]
-![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)]
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
 
