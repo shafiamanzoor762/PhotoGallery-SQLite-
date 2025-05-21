@@ -43,8 +43,8 @@ Before you begin, ensure you have the following:
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/PhotoGallery-iOS.git
-cd PhotoGallery-iOS
+git clone https://github.com/shafiamanzoor762/PhotoGallery-SQLite.git
+cd PhotoGallery-SQLite
 ```
 
 ### Step 2: Open in Xcode
@@ -62,13 +62,11 @@ cd PhotoGallery-iOS
 
 ```markdown
 PhotoGallery-iOS/
-├── Models/            # Data models (e.g., Photo, Event, Person)
+├── CustomComponents   # Common Views
+├── Helper/           # Utility extensions Api Integration and SQLite service
+├── Model/            # Data models (e.g., Image, Event, Person)
 ├── Views/             # SwiftUI Views
-├── ViewModels/        # ObservableObjects for binding logic
-├── Helpers/           # Utility extensions and SQLite service
-├── Resources/         # Assets and metadata
-├── Database/          # SQLite DB and schema setup
-└── Info.plist
+      └── ViewModels/        # ObservableObjects for binding logic
 ```
 
 ---
@@ -79,8 +77,6 @@ PhotoGallery-iOS/
 * 🧠 **Face Recognition** — Group photos by detected individuals.
 * 🗃 **Metadata Tagging** — Uses EXIF data for events, time, and location.
 * 🧭 **SQLite Integration** — Efficient and lightweight local storage.
-* 🌙 **Dark Mode Support** — Beautifully adaptive UI.
-* 📱 **Responsive UI** — Optimized for various iOS screen sizes.
 
 ---
 
@@ -114,7 +110,7 @@ Use the **Preview Canvas** (`Option + Cmd + P`) for real-time updates, or rebuil
   * Ensure photos have recognizable faces.
 * 📍 **No location tag?**
 
-  * Check image metadata includes GPS.
+  * Check image metadata.
 
 ---
 
