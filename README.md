@@ -43,8 +43,8 @@ Before you begin, ensure you have the following:
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/shafiamanzoor762/PhotoGallery-SQLite.git
-cd PhotoGallery-SQLite
+git clone [https://github.com/shafiamanzoor762/PhotoGallery-SQLite.git](https://github.com/shafiamanzoor762/PhotoGallery-SQLite-.git)
+cd PhotoGallery-SQLite-
 ```
 
 ### Step 2: Open in Xcode
