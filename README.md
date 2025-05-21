@@ -118,7 +118,7 @@ Use the **Preview Canvas** (`Option + Cmd + P`) for real-time updates, or rebuil
 
 * [SwiftUI Documentation](https://developer.apple.com/documentation/swiftui)
 * [SQLite for iOS](https://www.sqlite.org/index.html)
-* [Face Detection in iOS](https://developer.apple.com/documentation/vision/recognizing_faces_in_live_capture)
+* [Face Detection in Python](https://www.datacamp.com/tutorial/face-detection-python-opencv)
 
 ---
 
