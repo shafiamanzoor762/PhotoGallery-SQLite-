@@ -22,11 +22,6 @@ struct ButtonWhite: View {
                 .background(Color.white)
                 .clipShape(Capsule())
         }
-        
-//            .onLongPressGesture(minimumDuration: .infinity,maximumDistance: .infinity, pressing: { pressing in withAnimation(.easeInOut(duration: 0.2)){
-//                self.pressed = pressing
-//            }},perform: {})
-        
     }
 }
 

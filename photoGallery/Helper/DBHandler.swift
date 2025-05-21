@@ -61,6 +61,9 @@ class DBHandler: ObservableObject{
         connectToDatabase()
         createTables()
 //        try? populateTestDataForGrouping()
+        
+//        generateRandomLinks(count: 10, db: db!)
+
     }
 
     func connectToDatabase() {
@@ -149,123 +152,6 @@ class DBHandler: ObservableObject{
         }
     }   
     
-
-
-    // DBHandler.swift
-//    func getIncompleteImages() -> [ImageeDetail] {
-//        var incompleteImages: [ImageeDetail] = []
-//        
-//        do {
-//            guard let db = db else {
-//                print("Database not connected")
-//                return []
-//            }
-//            
-//            // Base query for non-deleted images
-//            let baseQuery = imageTable.filter(isDeleted == false || isDeleted == nil)
-//            
-//            for imageRow in try db.prepare(baseQuery) {
-//                // Check for incomplete fields
-//                let eventDateColumn = imageRow[eventDate]
-//                let hasNoEventDate = eventDateColumn == nil
-//                
-//                let hasNoEvents = try db.scalar(
-//                    imageEventTable
-//                        .filter(imageEventImageId == imageRow[imageId])
-//                        .count
-//                ) == 0
-//                
-//                let hasNoLocation = imageRow[imageLocationId] == nil
-//                
-//                var hasUnknownPersons = false
-//                let personQuery = personTable
-//                    .join(imagePersonTable, on: personTable[personId] == imagePersonTable[imagePersonPersonId])
-//                    .filter(imagePersonTable[imagePersonImageId] == imageRow[imageId])
-//                    .filter(personName == nil || personGender == "U")
-//                
-//                if try db.scalar(personQuery.count) > 0 {
-//                    hasUnknownPersons = true
-//                }
-//                
-//                if hasNoEventDate || hasNoEvents || hasNoLocation || hasUnknownPersons {
-//                    // Parse dates
-//                    guard let captureDateStr = imageRow[captureDate],
-//                          let lastModifiedStr = imageRow[lastModified],
-//                          let captureDate = Date.fromISOString(captureDateStr),
-//                          let lastModified = Date.fromISOString(lastModifiedStr) else {
-//                        continue
-//                    }
-//                    
-//                    // Handle event date (can be null)
-//                    let eventDate: Date
-//                    if let eventDateStr = eventDateColumn {  // This is now correct
-//                        eventDate = Date.fromDatabaseString(eventDateStr) ?? captureDate
-//                    } else {
-//                        eventDate = captureDate
-//                    }
-//                    
-//                    // Rest of your code remains the same...
-//                    // Get location if exists
-//                    var location: Locationn? = nil
-//                    if let locationId = imageRow[imageLocationId],
-//                       let locationRow = try db.pluck(locationTable.filter(self.locationId == locationId)) {
-//                        location = Locationn(
-//                            Id: locationRow[self.locationId],
-//                            Name: locationRow[locationName] ?? "Unknown",
-//                            Lat: locationRow[latitude] ?? 0.0,
-//                            Lon: locationRow[longitude] ?? 0.0
-//                        )
-//                    }
-//                    
-//                    // Get associated events
-//                    var events: [Eventt] = []
-//                    let eventQuery = eventTable
-//                        .join(imageEventTable, on: eventTable[eventId] == imageEventTable[imageEventEventId])
-//                        .filter(imageEventTable[imageEventImageId] == imageRow[imageId])
-//                    
-//                    for eventRow in try db.prepare(eventQuery) {
-//                        events.append(Eventt(
-//                            Id: eventRow[eventId],
-//                            Name: eventRow[eventName] ?? "Unnamed Event"
-//                        ))
-//                    }
-//                    
-//                    // Get associated persons
-//                    var persons: [Personn] = []
-//                    let personQuery = personTable
-//                        .join(imagePersonTable, on: personTable[personId] == imagePersonTable[imagePersonPersonId])
-//                        .filter(imagePersonTable[imagePersonImageId] == imageRow[imageId])
-//                    
-//                    for personRow in try db.prepare(personQuery) {
-//                        persons.append(Personn(
-//                            Id: personRow[personId],
-//                            Name: personRow[personName] ?? "Unknown",
-//                            Gender: personRow[personGender] ?? "U",
-//                            Path: personRow[personPath] ?? ""
-//                        ))
-//                    }
-//                    
-//                    // Create ImageeDetail
-//                    let imageDetail = ImageeDetail(
-//                        id: imageRow[imageId],
-//                        path: imageRow[imagePath],
-//                        is_Sync: imageRow[isSync] ?? false,
-//                        capture_date: captureDate,
-//                        event_date: eventDate,
-//                        last_modified: lastModified,
-//                        location: location ?? Locationn(Id: 0, Name: "Unknown", Lat: 0.0, Lon: 0.0),
-//                        events: events,
-//                        persons: persons
-//                    )
-//                    
-//                    incompleteImages.append(imageDetail)
-//                }
-//            }
-//        } catch {
-//            print("Error fetching incomplete images: \(error)")
-//        }
-//        return incompleteImages
-//    }
     
     
     func getIncompleteImages() -> [GalleryImage] {
@@ -404,5 +290,87 @@ class DBHandler: ObservableObject{
         }
 
     //MARK: - Get Image Details
+
+    
+    func generateRandomLinks(count: Int, db: Connection) {
+        do {
+            // Fetch all person IDs
+            let persons = try db.prepare(personTable.select(personId)).map { $0[personId] }
+
+            guard persons.count >= 2 else {
+                print("Not enough persons to create links.")
+                return
+            }
+
+            for _ in 0..<count {
+                // Pick 2 different random persons
+                let shuffled = persons.shuffled()
+                let p1 = shuffled[0]
+                let p2 = shuffled[1]
+
+                // Avoid self-links
+                if p1 == p2 { continue }
+
+                // Insert into link table
+                let insert = linkTable.insert(linkPerson1Id <- p1, linkPerson2Id <- p2)
+                try db.run(insert)
+            }
+
+            print("✅ Random links inserted.")
+        } catch {
+            print("❌ Error inserting random links: \(error)")
+        }
+    }
+    
+    
+    func preparePersonGroupPayload() -> [String: Any]? {
+        do {
+            // Get persons
+            let personsQuery = try db?.prepare(personTable)
+            let persons = personsQuery?.compactMap { row in
+                return [
+                    "id": row[personId],
+                    "name": row[personName] ?? "",
+                    "path": row[personPath] ?? "",
+                    "gender": row[personGender] ?? ""
+                ]
+            } ?? []
+            
+            // Get links
+            let linksQuery = try db?.prepare(linkTable)
+            let links = linksQuery?.compactMap { row in
+                return [
+                    "person1_id": row[linkPerson1Id],
+                    "person2_id": row[linkPerson2Id]
+                ]
+            } ?? []
+            
+            // Get image_persons
+            let imagePersonQuery = try db?.prepare(imagePersonTable)
+            let imagePersons = imagePersonQuery?.compactMap { row in
+                return [
+                    "image_id": row[imagePersonImageId],
+                    "person_id": row[imagePersonPersonId]
+                ]
+            } ?? []
+            
+            // Get image_ids where not deleted
+            let imageQuery = try db?.prepare(imageTable.filter(isDeleted == false || isDeleted == nil))
+            let imageIDs = imageQuery?.map { $0[imageId] } ?? []
+            
+            return [
+                "persons": persons,
+                "links": links,
+                "image_persons": imagePersons,
+                "image_ids": imageIDs
+            ]
+            
+        } catch {
+            print("Error preparing data: \(error)")
+            return nil
+        }
+    }
+
+
 
 }

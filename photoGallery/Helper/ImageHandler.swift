@@ -60,41 +60,92 @@ class ImageHandler {
                         return
                     }
                     
-                    // Use the completion handler version of extractFacesViaApi
-                    ApiHandler.extractFacesViaApi(from: image) { extractedFaces in
-                        guard !extractedFaces.isEmpty else {
-                            completion(.success(Int(imageId)))
-                            return
-                        }
-                        
-                        // Process faces in parallel
-                        let group = DispatchGroup()
-                        var lastError: Error?
-                        
-                        for facePath in extractedFaces {
-                            group.enter()
-                            
-                            self.processFace(
-                                facePath: facePath,
-                                imageId: Int(imageId),
-                                db: db,
-                                completion: { error in
-                                    if let error = error {
-                                        lastError = error
-                                    }
-                                    group.leave()
-                                }
-                            )
-                        }
-                        
-                        group.notify(queue: .main) {
-                            if let error = lastError {
-                                completion(.failure(error))
-                            } else {
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        HelperFunctions.checkServerStatus { isServerActive in
+                            guard isServerActive, let image = UIImage(contentsOfFile: path) else {
                                 completion(.success(Int(imageId)))
+                                return
+                            }
+                            
+                            // Call the API to process the image
+                            ApiHandler.processImage(image: image) { result in
+                                switch result {
+                                case .success(let data):
+                                    do {
+                                        // Parse the JSON response
+                                        if let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                                            for faceData in jsonArray {
+                                                guard let status = faceData["status"] as? String,
+                                                      let facePath = faceData["path"] as? String else {
+                                                    continue
+                                                }
+                                                
+                                                let name = faceData["name"] as? String ?? "unknown"
+                                                let gender = faceData["gender"] as? String ?? "U"
+                                                
+                                                // Insert or update the face data in local database
+                                                self.insertOrUpdateFace(
+                                                    imageId: Int(imageId),
+                                                    facePath: facePath,
+                                                    status: status,
+                                                    name: name,
+                                                    gender: gender,
+                                                    db: db
+                                                )
+                                                
+                                            }
+                                        }
+                                        completion(.success(Int(imageId)))
+                                    } catch {
+                                        print("JSON parsing error: \(error)")
+                                        completion(.success(Int(imageId))) // Still complete even if parsing fails
+                                    }
+                                    
+                                case .failure(let error):
+                                    print("API error: \(error)")
+                                    completion(.success(Int(imageId))) // Still complete even if API fails
+                                }
                             }
                         }
                     }
+                    
+                    
+                    // Use the completion handler version of extractFacesViaApi
+//                    ApiHandler.extractFacesViaApi(from: image) { extractedFaces in
+//                        guard !extractedFaces.isEmpty else {
+//                            completion(.success(Int(imageId)))
+//                            return
+//                        }
+//                        
+//                        
+//                        // Process faces in parallel
+//                        let group = DispatchGroup()
+//                        var lastError: Error?
+//                        
+//                        for facePath in extractedFaces {
+//                            group.enter()
+//                            
+//                            self.processFace(
+//                                facePath: facePath,
+//                                imageId: Int(imageId),
+//                                db: db,
+//                                completion: { error in
+//                                    if let error = error {
+//                                        lastError = error
+//                                    }
+//                                    group.leave()
+//                                }
+//                            )
+//                        }
+//                        
+//                        group.notify(queue: .main) {
+//                            if let error = lastError {
+//                                completion(.failure(error))
+//                            } else {
+//                                completion(.success(Int(imageId)))
+//                            }
+//                        }
+//                    }
                 }
             }
             
@@ -103,6 +154,58 @@ class ImageHandler {
             print("❌ Error in addImage: \(error)")
         }
     }
+    
+
+        
+
+        
+    func insertOrUpdateFace(imageId: Int, facePath: String, status: String, name: String, gender: String, db: Connection) {
+            do {
+                
+                var personId: Int?
+
+                    let insertPerson = dbHandler.personTable.insert(
+                        dbHandler.personName <- name,
+                        dbHandler.personPath <- facePath,
+                        dbHandler.personGender <- gender
+                    )
+                    personId = Int(try db.run(insertPerson))
+
+                
+                // Now handle the image-person relationship
+                if let personId = personId {
+                    let imagePersonQuery = dbHandler.imagePersonTable.filter(
+                        dbHandler.imagePersonImageId == imageId &&
+                        dbHandler.imagePersonPersonId == personId
+                    )
+                    
+                    if try db.scalar(imagePersonQuery.exists) {
+                        // Relationship exists - update if needed
+                        let updateRelation = imagePersonQuery.update(
+                            // Add any fields you might want to update
+                        )
+                        try db.run(updateRelation)
+                    } else {
+                        // Create new relationship
+                        let insertRelation = dbHandler.imagePersonTable.insert(
+                            dbHandler.imagePersonImageId <- imageId,
+                            dbHandler.imagePersonPersonId <- personId
+                        )
+                        try db.run(insertRelation)
+                    }
+                }
+                
+                // Update the image's sync status if needed
+//                let updateImage = dbHandler.imageTable.filter(dbHandler.imageId == imageId)
+//                    .update(dbHandler.isSync <- false)
+//                try db.run(updateImage)
+                
+            } catch {
+                print("Database error in insertOrUpdateFace: \(error)")
+            }
+        }
+
+    
 
     private func processFace(facePath: String, imageId: Int, db: Connection, completion: @escaping (Error?) -> Void) {
         DispatchQueue.global(qos: .utility).async {
@@ -183,113 +286,7 @@ class ImageHandler {
  
     // MARK: - Edit Image
     
-//    func editImage(imageId: Int, persons: [Personn]?, eventNames: [String]?, eventDate: String?, location: Locationn?, completion: @escaping (Swift.Result<Void, Error>) -> Void) {
-//        do {
-//            let db = try dbHandler.db!
-//            
-//            // Fetch the image record by image_id
-//            let imageQuery = dbHandler.imageTable.filter(dbHandler.imageId == imageId)
-//            guard try db.pluck(imageQuery) != nil else {
-//                completion(.failure(NSError(domain: "", code: 404, userInfo: [NSLocalizedDescriptionKey: "Image not found"])))
-//                return
-//            }
-//            
-//            // Update event_date if provided
-//            if let eventDate = eventDate {
-//                let update = imageQuery.update(
-//                    dbHandler.eventDate <- eventDate,
-//                    dbHandler.lastModified <- HelperFunctions.currentDateString()
-//                )
-//                try db.run(update)
-//            }
-//            
-//            // Update events if provided
-//            if let eventNames = eventNames, !eventNames.isEmpty {
-//                // First clear existing event associations
-//                let deleteImageEvents = dbHandler.imageEventTable.filter(dbHandler.imageEventImageId == imageId)
-//                try db.run(deleteImageEvents.delete())
-//                
-//                // Find matching events
-//                let matchingEvents = dbHandler.eventTable.filter(eventNames.contains(dbHandler.eventName))
-//                let events = try db.prepare(matchingEvents).map { $0 }
-//                
-//                if !events.isEmpty {
-//                    // Associate image with events
-//                    for event in events {
-//                        let insertImageEvent = dbHandler.imageEventTable.insert(
-//                            dbHandler.imageEventImageId <- imageId,
-//                            dbHandler.imageEventEventId <- event[dbHandler.eventId]
-//                        )
-//                        try db.run(insertImageEvent)
-//                    }
-//                }
-//            }
-//            
-//            // Update location if provided
-//            if let location = location {
-//                // Check if the location exists
-//                let locationQuery = dbHandler.locationTable.filter(
-//                    dbHandler.latitude == location.Lat && dbHandler.longitude == location.Lon
-//                )
-//                
-//                var locationId: Int
-//                
-//                if let existingLocation = try db.pluck(locationQuery) {
-//                    locationId = existingLocation[dbHandler.locationId]
-//                } else {
-//                    // Create new location
-//                    let insertLocation = dbHandler.locationTable.insert(
-//                        dbHandler.locationName <- location.Name,
-//                        dbHandler.latitude <- location.Lat,
-//                        dbHandler.longitude <- location.Lon
-//                    )
-//                    locationId = Int(try db.run(insertLocation))
-//                }
-//                
-//                // Update image's location
-//                let updateImage = imageQuery.update(
-//                    dbHandler.imageLocationId <- locationId,
-//                    dbHandler.lastModified <- HelperFunctions.currentDateString()
-//                )
-//                try db.run(updateImage)
-//            }
-//            
-//            // Update persons if provided
-//            if let persons = persons {
-//                // First clear existing person associations
-//                let deleteImagePersons = dbHandler.imagePersonTable.filter(dbHandler.imagePersonImageId == imageId)
-//                try db.run(deleteImagePersons.delete())
-//                
-//                for person in persons {
-//                    // Update person details if name/gender changed
-//                    let personQuery = dbHandler.personTable.filter(dbHandler.personId == person.Id)
-//                    if let existingPerson = try db.pluck(personQuery) {
-//                        let update = personQuery.update(
-//                            dbHandler.personName <- person.Name,
-//                            dbHandler.personGender <- person.Gender
-//                        )
-//                        try db.run(update)
-//                        
-//                        // Re-link person to image
-//                        let insertImagePerson = dbHandler.imagePersonTable.insert(
-//                            dbHandler.imagePersonImageId <- imageId,
-//                            dbHandler.imagePersonPersonId <- person.Id
-//                        )
-//                        try db.run(insertImagePerson)
-//                    }
-//                }
-//            }
-//            
-//            completion(.success(()))
-//        } catch {
-//            completion(.failure(error))
-//            print("Error editing image: \(error)")
-//        }
-//    }
-    
-    
-
-    func editImage(imageId: Int, persons: [Personn]?, eventNames: [String]?, eventDate: String?, location: Locationn?, completion: @escaping (Swift.Result<Void, Error>) -> Void) {
+    func editImage(imageId: Int, persons: [Personn]?, eventNames: [Eventt]?, eventDate: String?, location: Locationn?, completion: @escaping (Swift.Result<Void, Error>) -> Void) {
         do {
             let db = try dbHandler.db!
             
@@ -309,13 +306,25 @@ class ImageHandler {
                 if let eventNames = eventNames, !eventNames.isEmpty {
                     try db.run(dbHandler.imageEventTable.filter(dbHandler.imageEventImageId == imageId).delete())
                     
-                    let matchingEvents = dbHandler.eventTable.filter(eventNames.contains(dbHandler.eventName))
-                    for event in try db.prepare(matchingEvents) {
+//                    let matchingEvents = dbHandler.eventTable.filter(eventNames.contains(dbHandler.eventName))
+//                    for event in try db.prepare(matchingEvents) {
+//                        try db.run(dbHandler.imageEventTable.insert(
+//                            dbHandler.imageEventImageId <- imageId,
+//                            dbHandler.imageEventEventId <- event[dbHandler.eventId]
+//                        ))
+//                    }
+                    
+                    for event in eventNames {
+                        
+                        if event.Id <= 0 { continue }
+                        let eventId = event.Id
+                        
                         try db.run(dbHandler.imageEventTable.insert(
                             dbHandler.imageEventImageId <- imageId,
-                            dbHandler.imageEventEventId <- event[dbHandler.eventId]
+                            dbHandler.imageEventEventId <- eventId
                         ))
                     }
+                    
                 }
                 
                 // Handle location
@@ -349,13 +358,30 @@ class ImageHandler {
                     
                     for person in persons {
                         // Fixed person ID check
-                        if person.Id <= 0 { continue }
-                        let personId = person.Id
+                        if person.id <= 0 { continue }
+                        let personId = person.id
                         
                         try db.run(dbHandler.personTable.filter(dbHandler.personId == personId).update(
-                            dbHandler.personName <- person.Name,
-                            dbHandler.personGender <- person.Gender
+                            dbHandler.personName <- person.name,
+                            dbHandler.personGender <- person.gender
                         ))
+                        
+                        let query = dbHandler.personTable.filter(dbHandler.personId == personId).limit(1)
+                            
+                        if let person = try db.pluck(query) {
+                                let path = person[dbHandler.personPath]
+                                let name = person[dbHandler.personName]
+                            
+                            ApiHandler.loadFaceImage(from: path ?? "") { faceImage in
+                                    guard let faceImage = faceImage else {
+                                        //completion(nil)  // Skip if image fails to load
+                                        return
+                                    }
+                                    ApiHandler.recognizePersonViaAPI(faceImage: faceImage, name: name, completion: {_ in })
+                                }
+                            }
+                        
+                    
                         
                         try db.run(dbHandler.imagePersonTable.insert(
                             dbHandler.imagePersonImageId <- imageId,
@@ -431,10 +457,10 @@ class ImageHandler {
                 
                 for personRow in try dbHandler.db!.prepare(personQuery) {
                     let person = Personn(
-                        Id: personRow[dbHandler.personId],
-                        Name: personRow[dbHandler.personName] ?? "",
-                        Gender: personRow[dbHandler.personGender] ?? "",
-                        Path: personRow[dbHandler.personPath] ?? ""
+                        id: personRow[dbHandler.personId],
+                        name: personRow[dbHandler.personName] ?? "",
+                        gender: personRow[dbHandler.personGender] ?? "",
+                        path: personRow[dbHandler.personPath] ?? ""
                     )
                     persons.append(person)
                 }

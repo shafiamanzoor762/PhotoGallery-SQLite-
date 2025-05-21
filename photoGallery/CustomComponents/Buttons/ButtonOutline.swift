@@ -25,11 +25,6 @@ struct ButtonOutline: View {
                         .stroke(Color.black, lineWidth: 1)
                 )
         }
-        
-//            .onLongPressGesture(minimumDuration: .infinity,maximumDistance: .infinity, pressing: { pressing in withAnimation(.easeInOut(duration: 0.2)){
-//                self.pressed = pressing
-//            }},perform: {})
-        
     }
 }
 

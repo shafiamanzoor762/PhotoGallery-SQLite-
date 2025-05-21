@@ -7,6 +7,7 @@
 
 import Foundation
 import UIKit
+import SwiftUI
 
 //extension DateFormatter {
 //    static let yyyyMMdd: DateFormatter = {
@@ -75,4 +76,32 @@ extension UIImage {
 
 extension NSNotification.Name {
     static let imageDataUpdated = Notification.Name("imageDataUpdated")
+}
+
+
+extension Notification.Name {
+    static let refreshLabelView = Notification.Name("RefreshLabelView")
+}
+
+
+extension Binding where Value == String {
+    func genderBinding() -> Binding<String> {
+        Binding<String>(
+            get: {
+                switch self.wrappedValue {
+                case "M": return "Male"
+                case "F": return "Female"
+                case "U": return "Unknown"
+                default: return ""
+                }
+            },
+            set: { newValue in
+                switch newValue {
+                case "Male": self.wrappedValue = "M"
+                case "Female": self.wrappedValue = "F"
+                default: self.wrappedValue = "U"
+                }
+            }
+        )
+    }
 }

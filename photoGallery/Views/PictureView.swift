@@ -20,6 +20,8 @@ struct PictureView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var navBarState: NavBarState
     
+    @StateObject var viewModel = PersonViewModel()
+    
 //    var tabItems: [TabItemDescription] = [
 //        .init(imageName: "photo", title: "PICTURE VIEW"),
 //        .init(imageName: "pencil", title: "EDIT"),
@@ -33,11 +35,6 @@ struct PictureView: View {
  
             // Top Bar
             HStack {
-//                Text("Picture View")
-//                    .font(.title)
-//                    .fontWeight(.bold)
-//                    .foregroundColor(.white)
-//                    .padding(.bottom, 5)
                 
                 Spacer()
                 
@@ -72,16 +69,11 @@ struct PictureView: View {
                         .foregroundColor(.white)
                 }
             }
-            .padding()
+            .padding([.trailing, .bottom])
             .background(Defs.seeGreenColor)
             
             
             Spacer()
-//            Image(image.path)
-//                .resizable()
-//                .scaledToFit()
-//                //.frame(width:.infinity)
-//                .padding()
             
             if let uiImage = uiImage {
                 Image(uiImage: uiImage)
@@ -92,21 +84,71 @@ struct PictureView: View {
                 ProgressView()
             }
             
-//            HStack{
-//                
-//                ForEach(image.persons, id:\.Id){p in
-//                    
-//                    PersonImageCardView(imagePath: p.Path)
-//                }
-//            }
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack {
-                    ForEach(image.persons, id: \.Id) { p in
-                        PersonImageCardView(imagePath: p.Path)
+                    ForEach(image.persons, id: \.id) { p in
+                        PersonImageCardView(imagePath: p.path)
+                        
+                            .onTapGesture {
+                                if viewModel.selectedPersonId == p.id && viewModel.showTooltip {
+                                    viewModel.showTooltip = false
+                                    viewModel.selectedPersonId = nil
+                                } else {
+                                    viewModel.selectedPersonId = p.id
+                                    viewModel.loadLinkedPersons(personId: p.id)
+                                    viewModel.showTooltip = true
+                                }
+                            }
+
                     }
                 }
             }
+            
+            
+            if viewModel.showTooltip {
+
+                
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 10) {
+                        Text("Training Images of")
+                            .font(.headline)
+                            .padding([.top, .leading])
+                        
+                        if let firstPerson = viewModel.selectedPersons.first {
+                            PersonImageCardView(imagePath: firstPerson.path)
+                                .id(firstPerson.id)
+                                .padding([.top])
+                        }
+                    }
+
+                    ScrollView {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 25) {
+                            ForEach(viewModel.selectedPersons.dropFirst(), id: \.id) { person in
+                                PersonImageView(imagePath: person.path)
+                            }
+                        }
+                        .padding()
+                    }
+                    .frame(maxHeight: viewModel.selectedPersons.count > 6 ? 150 : .infinity)
+                }
+
+                .background(
+                    Color(.systemGray6)
+                        .opacity(0.95)
+                )
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 4)
+                .padding()
+                .transition(.opacity)
+                .animation(.easeInOut, value: viewModel.showTooltip)
+            }
+
+
 
             
             Spacer()
@@ -182,9 +224,9 @@ struct PersonImageCardView: View {
                         RoundedRectangle(cornerRadius: 20)
                             .stroke(Color.black, lineWidth: 1)
                     )
-                    .onTapGesture {
-                    
-                }
+//                    .onTapGesture {
+//                    
+//                }
                 
             } else {
                 // Placeholder while loading
@@ -214,6 +256,7 @@ struct PersonImageCardView: View {
         }
     }
 }
+
 
 
 #Preview {

@@ -43,12 +43,14 @@ struct Cover2: View {
                     SyncView(isRequired: false)
                     Spacer()
                 }
+                
                 if TabviewName == "Search" {
                     SearchView()
                 }
-                if TabviewName == "Bulk Edit" {
-                    BulkEditView()
-                }
+//                if TabviewName == "Bulk Edit" {
+////                    BulkEditView()
+//                }
+                
                 if TabviewName == "Undo Changes" {
                     UndoChangesView()
                 }

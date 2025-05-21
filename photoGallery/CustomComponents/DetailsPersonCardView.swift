@@ -12,20 +12,15 @@ struct DetailsPersonCardView: View {
     
     var body: some View {
         HStack {
-//            Image(person.Path)
-//                .resizable()
-//                .scaledToFit()
-//                .frame(width: 45, height: 45)
-//                .clipShape(RoundedRectangle(cornerRadius: 5))
             
-            PersonImageView(imagePath: person.Path)
+            PersonImageView(imagePath: person.path)
             
             VStack(alignment: .leading) {
                 HStack{
                     Text("Name")
                         .font(.caption)
                     
-                    Text(person.Name)
+                    Text(person.name)
                         .font(.caption)
                         .foregroundColor(Defs.seeGreenColor)
                 
@@ -34,7 +29,7 @@ struct DetailsPersonCardView: View {
                     Text("Gender")
                         .font(.caption)
                     
-                    Text(person.Gender)
+                    Text(person.gender)
                         .font(.caption)
                         .foregroundColor(Defs.seeGreenColor)
                     

@@ -73,13 +73,40 @@ struct EditImageView: View {
             if viewModel.isLoading {
                 ProgressView()
                     .scaleEffect(1.5)
+                    .zIndex(1)
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
             }
             
             // Persons Popup
             if showPopup {
                 personsPopup
+                    .zIndex(2)
             }
+            
+            // Link Persons Popup
+//            if viewModel.showLinkPopup {
+//                Color.black.opacity(0.4)
+//                    .edgesIgnoringSafeArea(.all)
+//                LinkPopupView(viewModel: viewModel)
+//            }
+            
+            if viewModel.showLinkPopup {
+                ZStack {
+                    Color.black.opacity(0.4)
+                        .edgesIgnoringSafeArea(.all)
+                        .onTapGesture {
+                            withAnimation {
+                                viewModel.showLinkPopup = false
+                            }
+                        }
+                        .zIndex(3)
+                    LinkPopupView(viewModel: viewModel)
+                    //                }
+                        .zIndex(4)
+                    //.transition(.opacity)
+                }
+            }
+
         }
         .onAppear(){
             print(viewModel.allEvents.count)
@@ -97,7 +124,7 @@ struct EditImageView: View {
                 .font(.body)
                 .background(Defs.seeGreenColor)
                 .border(.gray, width: 1)
-                .foregroundColor(.white)
+                .foregroundColor(Defs.seeGreenColor)
                 .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.white, lineWidth: 1))
             
             Button("Cancel", role: .cancel) {
@@ -127,13 +154,13 @@ struct EditImageView: View {
                 .foregroundColor(.white)
             Spacer()
             VStack(alignment: .leading) {
-                PersonImageView(imagePath: viewModel.image.persons.first?.Path ?? "")
+                PersonImageView(imagePath: viewModel.image.persons.first?.path ?? "")
                 
                 TextField("Enter name", text: Binding(
-                    get: { viewModel.image.persons.first?.Name ?? "" },
+                    get: { viewModel.image.persons.first?.name ?? "" },
                     set: { newValue in
                         if !viewModel.image.persons.isEmpty {
-                            viewModel.image.persons[0].Name = newValue
+                            viewModel.image.persons[0].name = newValue
                         }
                     }
                 ))
@@ -168,10 +195,10 @@ struct EditImageView: View {
             
             RadioButton(
                 selectedText: Binding(
-                    get: { viewModel.image.persons.first?.Gender ?? "" },
+                    get: { viewModel.image.persons.first?.gender ?? "" },
                     set: { newValue in
                         if !viewModel.image.persons.isEmpty {
-                            viewModel.image.persons[0].Gender = newValue
+                            viewModel.image.persons[0].gender = newValue
                         }
                     }
                 ).genderBinding(),
@@ -181,10 +208,10 @@ struct EditImageView: View {
             
             RadioButton(
                 selectedText: Binding(
-                    get: { viewModel.image.persons.first?.Gender ?? "" },
+                    get: { viewModel.image.persons.first?.gender ?? "" },
                     set: { newValue in
                         if !viewModel.image.persons.isEmpty {
-                            viewModel.image.persons[0].Gender = newValue
+                            viewModel.image.persons[0].gender = newValue
                         }
                     }
                 ).genderBinding(),
@@ -195,63 +222,51 @@ struct EditImageView: View {
     }
     
     private var eventSection: some View {
-        HStack {
-            Text("Select Events")
-                .font(.headline)
-                .foregroundColor(.white)
-            Spacer()
+        VStack {
             
-            
-            VStack{
-//                Text("Select Events")
-//                    .font(.headline)
-                
+            HStack {
+                Text("Select Events")
+                    .font(.headline)
+                    .foregroundColor(.white)
                 Spacer()
                 
-                HStack {
-                    Picker("Event", selection: $selectedEvent) {
-                        ForEach(viewModel.allEvents, id: \.self.Id) { event in
-                            Text(event.Name).tag(event)
-                        }
-                    }
-                    .pickerStyle(MenuPickerStyle())
-                    .onChange(of: selectedEvent ?? Eventt(Id: 0, Name: "")) { newEvent in
-                        addEvent(newEvent)
+                
+                //            VStack{
+                //                Text("Select Events")
+                //                    .font(.headline)
+                
+                //                Spacer()
+                
+                //                HStack {
+                Picker("Event", selection: $selectedEvent) {
+                    ForEach(viewModel.allEvents, id: \.self.Id) { event in
+                        Text(event.Name).tag(event)
                     }
                 }
-                selectedItemsView(items: viewModel.image.events, removeAction: removeEvent)
-            }
-            
-            Button(action: { showAddEventDialog = true }) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 24))
+                .pickerStyle(MenuPickerStyle())
+                .onChange(of: selectedEvent ?? Eventt(Id: 0, Name: "")) { newEvent in
+                    addEvent(newEvent)
+                }
+                //                }
+                
+                //            }
+                
+                Button(action: { showAddEventDialog = true }) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 24))
                         .foregroundColor(.white)
                         .background(Defs.seeGreenColor)
                         .clipShape(Circle())
                         .shadow(radius: 4)
                 }
                 .padding()
-
+            }
             
+            selectedItemsView(items: viewModel.image.events, removeAction: removeEvent)
             
-            
-//            TextField("Enter Event Name", text: Binding(
-//                get: { viewModel.inputEvent ?? "" },
-//                set: { newValue in
-//                    if !viewModel.inputEvent.isEmpty{
-//                        viewModel.inputEvent = newValue
-//                    }
-//                }
-//            ))
-//            .frame(maxWidth: 150, maxHeight: 50)
-//            .font(.body)
-//                .background(Defs.seeGreenColor)
-//                .border(.gray, width: 1)
-//                .foregroundColor(.white)
-//                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.white, lineWidth: 1))
             
         }
-        .frame(height: 50)
+//        .frame(height: 90)
     }
     
     private var dateSections: some View {
@@ -335,7 +350,7 @@ struct EditImageView: View {
                 
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 10) {
-                        ForEach($viewModel.image.persons, id: \.Id) { $person in
+                        ForEach($viewModel.image.persons, id: \.id) { $person in
                             EditPersonCardView(person: $person)
                         }
                     }
@@ -355,12 +370,24 @@ struct EditImageView: View {
     private func saveChanges() {
         viewModel.saveChanges { success in
             if success {
+                viewModel.unlinkedPersonResponseModel.removeAll()
+                for person in viewModel.image.persons {
+                    if person.name != "unknown"{
+                        viewModel.personUnlinkDataRequest(selectedPerson: person)
+                    }
+                }
+                
+//                if viewModel.unlinkedPersonResponseModel.count > 0 {
+                    viewModel.showLinkPopup = true
+//                }
+                
                 alertMessage = "Changes saved successfully!"
             } else {
                 alertMessage = viewModel.error?.localizedDescription ?? "Failed to save changes"
             }
             showAlert = true
         }
+        
     }
     
     private func addEvent() {
@@ -390,7 +417,8 @@ struct EditImageView: View {
                                 .foregroundColor(Defs.seeGreenColor)
                         }
                     }
-                    .frame(width: 120, height: 35)
+                    .padding()
+                    .frame(height: 25)
                     .background(.white)
                     .cornerRadius(25)
                 }
@@ -405,51 +433,113 @@ struct EditImageView: View {
     private func addEvent(_ event: Eventt) {
         guard !viewModel.image.events.contains(where: { $0.Id == event.Id }) else { return }
         viewModel.image.events.append(event)
-        selectedEvent = nil // Reset selection
+//        selectedEvent = nil // Reset selection
     }
     
 }
 
 
+struct LinkPopupView: View {
+    @ObservedObject var viewModel: EditImageViewModel
 
-extension Binding where Value == String {
-    func genderBinding() -> Binding<String> {
-        Binding<String>(
-            get: {
-                switch self.wrappedValue {
-                case "M": return "Male"
-                case "F": return "Female"
-                case "U": return "Unknown"
-                default: return ""
-                }
-            },
-            set: { newValue in
-                switch newValue {
-                case "Male": self.wrappedValue = "M"
-                case "Female": self.wrappedValue = "F"
-                default: self.wrappedValue = "U"
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Spacer()
+                Button(action: {
+                    withAnimation {
+                        viewModel.showLinkPopup = false
+                    }
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.gray)
                 }
             }
-        )
+            //.padding()
+            // Title
+            Text("Same or different person?")
+                .font(.headline)
+            Text("Improve your people groups")
+                .font(.subheadline)
+                .foregroundColor(Defs.seeGreenColor)
+            Text("Tap on Group")
+                .font(.caption)
+                .foregroundColor(Defs.lightSeeGreenColor)
+
+            ScrollView {
+                VStack(spacing: 20) {
+                    ForEach($viewModel.unlinkedPersonResponseModel, id: \.selectedPerson.id) { $unlinkedModel in
+                        VStack(spacing: 12) {
+                            PersonCircleImageView(imagePath: unlinkedModel.selectedPerson.path, size: 65)
+
+                            ForEach(unlinkedModel.unLinkedPersons, id: \.person.id) { group in
+                                GroupView(group: group, isSelected: viewModel.selectedGroupIDs.contains(group.person.id)) {
+                                    if viewModel.selectedGroupIDs.contains(group.person.id) {
+                                        viewModel.selectedGroupIDs.remove(group.person.id)
+                                    } else {
+                                        viewModel.selectedGroupIDs.insert(group.person.id)
+                                    }
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        .shadow(radius: 4)
+                    
+
+            // Action Buttons
+            HStack {
+                ButtonWhite(title: "Different", action: {
+                    //viewModel.showLinkPopup = false
+                    viewModel.selectedGroupIDs.removeAll()
+                    print(viewModel.unlinkedPersonResponseModel)
+                })
+                ButtonOutline(title: "Same", action: {
+                    viewModel.linkSelectedPersons(selectedPerson: unlinkedModel.selectedPerson)
+                })
+            }
+            .padding(.bottom)
+                        
+                    }
+                }
+                .padding()
+            }
+        }
+        .padding()
+        .background(Color(UIColor.systemGroupedBackground))
+        .cornerRadius(20)
+        .shadow(radius: 10)
+        .padding()
     }
 }
 
 
 
+struct GroupView: View {
+    var group: UnlinkedPersonResponse
+    var isSelected: Bool
+    var onTap: () -> Void
 
+    var body: some View {
+        HStack(spacing: 10) {
+            PersonCircleImageView(imagePath: group.person.path, size: 55)
 
+            ForEach(group.persons.prefix(2), id: \.id) { p in
+                PersonCircleImageView(imagePath: p.path, size:55)
+            }
 
-
-
-
-
-
-
-
-
-
-
-
-
-//=========================================
+            if group.persons.count == 1 {
+                Spacer().frame(width: 60, height: 60)
+            }
+        }
+        .padding()
+        .background(isSelected ? Defs.lightSeeGreenColor.opacity(0.5) : Color.white)
+        .cornerRadius(10)
+        .shadow(radius: 0.5)
+        .onTapGesture {
+            onTap()
+        }
+    }
+}
 

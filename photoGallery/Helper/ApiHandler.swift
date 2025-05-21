@@ -8,18 +8,31 @@
 import Foundation
 import UIKit
 
+enum NetworkError: Error {
+    case invalidURL
+    case imageConversionFailed
+    case invalidResponse
+    case serverError(statusCode: Int)
+    case noData
+}
+
 class ApiHandler{
-    public static let baseUrl = "http://192.168.1.13:5000/"
-    
+//    public static let baseUrl = "http://192.168.1.13:5000/"
+//        public static let baseUrl = "http://192.168.1.14:5000/"
 //    public static let baseUrl = "http://192.168.217.208:5000/"
     
-    // Images
-    public static let imagesUrl = "\(ApiHandler.baseUrl)images/"
-    public static let faceUrl = "\(ApiHandler.baseUrl)face_images/"
+    public static let baseUrl = "http://192.168.64.4:5000/"
+    
+
     
     // Recognize Person
-    public static let recognizePersonPath = "\(ApiHandler.baseUrl)recognize_person"
-    public static let extractFacePath = "\(ApiHandler.baseUrl)extract_face"
+    public static let recognizePersonPathUrl = "\(ApiHandler.baseUrl)recognize_person"
+    public static let extractFacePathUrl = "\(ApiHandler.baseUrl)extract_face"
+    
+    //
+    public static let addMobileImageUrl = "\(ApiHandler.baseUrl)add_mobile_image"
+    public static let getPersonGroupsUrl = "\(ApiHandler.baseUrl)get_mobile_person_groups"
+    public static let getUnLinkedPersonsByIdUrl = "\(ApiHandler.baseUrl)get_unlinked_persons_by_id"
     
     // Tagging
     public static let addTagPath = "\(ApiHandler.baseUrl)tagimage"
@@ -39,7 +52,7 @@ class ApiHandler{
             return []
         }
         
-        let url = URL(string: ApiHandler.extractFacePath)!
+        let url = URL(string: ApiHandler.extractFacePathUrl)!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.timeoutInterval = 120  // Increased timeout to 30 seconds
@@ -114,9 +127,10 @@ class ApiHandler{
             return
         }
         
-        let url = URL(string: ApiHandler.recognizePersonPath)!
+        let url = URL(string: ApiHandler.recognizePersonPathUrl)!
+        
         var request = URLRequest(url: url)
-        request.httpMethod = "POST" // Changed from GET to POST
+        request.httpMethod = "POST"
         
         let boundary = UUID().uuidString
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
@@ -185,6 +199,120 @@ class ApiHandler{
         task.resume()
     }
     
+
+        
+    static func processImage(image: UIImage, completion: @escaping (Swift.Result<Data, Error>) -> Void) {
+            let urlString = addMobileImageUrl
+            guard let url = URL(string: urlString) else {
+                completion(.failure(NetworkError.invalidURL))
+                return
+            }
+            
+            // Convert UIImage to JPEG data
+            guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+                completion(.failure(NetworkError.imageConversionFailed))
+                return
+            }
+            
+            // Create multipart form data request
+            let boundary = UUID().uuidString
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+            
+            var body = Data()
+            
+            // Add image data to the request
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\n".data(using: .utf8)!)
+            body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+            body.append(imageData)
+            body.append("\r\n".data(using: .utf8)!)
+            
+            // Close the body
+            body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+            
+            request.httpBody = body
+            
+            // Create URLSession task
+            let task = URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    completion(.failure(NetworkError.invalidResponse))
+                    return
+                }
+                
+                guard (200...299).contains(httpResponse.statusCode) else {
+                    completion(.failure(NetworkError.serverError(statusCode: httpResponse.statusCode)))
+                    return
+                }
+                
+                guard let data = data else {
+                    completion(.failure(NetworkError.noData))
+                    return
+                }
+                
+                completion(.success(data))
+            }
+            
+            task.resume()
+        }
+    
+    
+    static func fetchPersonGroups(completion: @escaping ([PersonGroup]?, Error?) -> Void) {
+        guard let url = URL(string: getPersonGroupsUrl) else {
+            completion(nil, NetworkError.invalidURL)
+            return
+        }
+        
+        // Prepare the request payload
+        let payload = DBHandler().preparePersonGroupPayload() ?? [:]
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        } catch {
+            completion(nil, error)
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(nil, error)
+                return
+            }
+            
+            // Check for HTTP errors
+            if let httpResponse = response as? HTTPURLResponse,
+               !(200...299).contains(httpResponse.statusCode) {
+                completion(nil, NetworkError.serverError(statusCode: httpResponse.statusCode))
+                return
+            }
+            
+            guard let data = data else {
+                completion(nil, NetworkError.noData)
+                return
+            }
+            
+            do {
+                let ph = PersonHandler()
+                let personGroups = try ph.parsePersonGroups(from: data)
+                completion(personGroups, nil)
+            } catch {
+                completion(nil, error)
+            }
+        }.resume()
+    }
+
+
+    
     //MARK: - Load face image from server
     public static func loadFaceImage(from path: String, completion: @escaping (UIImage?) -> Void) {
         // Construct full URL by appending path to base URL
@@ -229,4 +357,72 @@ class ApiHandler{
         
         task.resume()
     }
+    
+
+    
+    static func getUnlinkedPersons(personId: Int, persons: [[String: Any]], links: [[String: Any]], completion: @escaping (Swift.Result<[UnlinkedPersonResponse], Error>) -> Void) {
+
+        guard let endpoint = URL(string: getUnLinkedPersonsByIdUrl) else {
+            completion(.failure(NetworkError.invalidURL))
+            return
+        }
+        
+            // Prepare request body
+            let requestBody: [String: Any] = [
+                "personId": personId,
+                "persons": persons,
+                "links": links
+            ]
+            
+            var request = URLRequest(url: endpoint)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            
+            do {
+                request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
+            } catch {
+                completion(.failure(error))
+                return
+            }
+            
+            // Debug print
+            //print("Sending request to \(endpoint) with body: \(requestBody)")
+            
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                // Handle network errors
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                // Check for successful HTTP status
+                guard let httpResponse = response as? HTTPURLResponse,
+                      (200...299).contains(httpResponse.statusCode) else {
+                    let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                    completion(.failure(NetworkError.serverError(statusCode: statusCode)))
+                    return
+                }
+                
+                // Parse successful response
+                if let data = data {
+                    do {
+                        // First try to decode successful response
+                        let decoder = JSONDecoder()
+                        decoder.keyDecodingStrategy = .convertFromSnakeCase
+                        let response = try decoder.decode([UnlinkedPersonResponse].self, from: data)
+                        completion(.success(response))
+                    } catch {
+                        // If that fails, try to decode an error response
+                        do {
+                            let errorResponse = try JSONDecoder().decode(APIError.self, from: data)
+                            completion(.failure(NetworkError.invalidResponse))
+                        } catch {
+                            // If all else fails, return parsing error
+                            completion(.failure(error))
+                        }
+                    }
+                }
+            }.resume()
+        }
+
 }

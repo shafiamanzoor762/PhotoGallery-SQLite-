@@ -22,17 +22,6 @@ struct CardSquare: View {
                     .cornerRadius(15)
                 
                 VStack{
-//                    Image("\(imageURL)")
-//                        .resizable()
-//                        .aspectRatio(contentMode: .fit)
-//                        .frame(width: 80, height: 80)
-//                        .cornerRadius(10)
-//                    
-//                        .overlay(
-//                            RoundedRectangle(cornerRadius: 10)
-//                                .stroke(Color.black, lineWidth: 1)
-//                        )
-//                        .padding(.top, 10)
                     
                     
                     Group {
@@ -50,15 +39,6 @@ struct CardSquare: View {
                                 )
                                 .padding(.top, 10)
                             
-//                                .resizable()
-//                                .aspectRatio(contentMode: .fit)
-//                                .scaledToFill()
-//                                .frame(width: 90, height: 90)
-//                                .clipShape(RoundedRectangle(cornerRadius: 5))
-//                                .overlay(
-//                                    RoundedRectangle(cornerRadius: 5)
-//                                        .stroke(Color.gray, lineWidth: 1)
-//                                )
                             
                         } else {
                             ProgressView()
@@ -105,7 +85,6 @@ struct CardSquare: View {
     }
 }
 
-#Preview {
-    CardSquare(title: "demo", count: "3")
-}
-
+//#Preview {
+//    CardSquare(title: "demo", count: "3")
+//}

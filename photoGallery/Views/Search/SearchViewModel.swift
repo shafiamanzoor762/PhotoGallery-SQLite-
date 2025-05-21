@@ -11,6 +11,9 @@ import MapKit
 
 class SearchModelView: ObservableObject {
     @Published var searchResults: [GalleryImage]?
+    
+    @Published var selectedGender: String = ""
+    
     @Published var isLoading = false
     @Published var error: Error?
     
@@ -35,6 +38,8 @@ class SearchModelView: ObservableObject {
         error = nil
         searchResults = nil
         
+//        print(genders)
+        
         DispatchQueue.global(qos: .userInitiated).async {
             // Convert coordinates to Locationn objects
             let locationObjects = coordinates.map { coordinate in
@@ -45,7 +50,7 @@ class SearchModelView: ObservableObject {
                 personNames: personNames,
                 genders: genders,
                 eventNames: eventNames,
-                captureDates: dates,
+                eventDates: dates,
                 location: locationObjects.first,
                 locationNames: locationNames,
                 dateSearchType: dateSearchType

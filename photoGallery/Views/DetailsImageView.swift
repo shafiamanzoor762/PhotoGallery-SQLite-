@@ -40,18 +40,12 @@ struct DetailsImageView: View {
                                 .foregroundColor(.white)
                             Spacer()
                             VStack{
-                                Text(image.persons.first?.Name ?? "No Name")
+                                Text(image.persons.first?.name ?? "No Name")
                                     .font(.headline)
                                     .foregroundColor(.white)
                                 
-//                                Image(image.persons.first?.Path ?? "")
-//                                    .resizable()
-//                                    .aspectRatio(contentMode: .fill)
-//                                    .frame(width: 40,height: 40)
-//                                    .clipShape(RoundedRectangle(cornerRadius: 5))
-//                                    .padding(.top, -15)
                                 
-                                PersonImageView(imagePath: image.persons.first?.Path ?? "")
+                                PersonImageView(imagePath: image.persons.first?.path ?? "")
                             }
                             if image.persons.count >= 2{
                                 //Image(systemName: "plus")
@@ -74,7 +68,7 @@ struct DetailsImageView: View {
                             .font(.headline)
                             .foregroundColor(.white)
                         Spacer()
-                        Text(image.persons.first?.Gender ?? "Not Mention")
+                        Text(image.persons.first?.gender ?? "Not Mention")
                             .font(.headline)
                             .foregroundColor(.white)
                     }
@@ -167,7 +161,7 @@ struct DetailsImageView: View {
                         
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: 10) {
-                                ForEach($image.persons, id:\.self.Id) { $person in
+                                ForEach($image.persons, id:\.self.id) { $person in
                                     DetailsPersonCardView(person: $person)
                                 }
                             }
@@ -186,61 +180,6 @@ struct DetailsImageView: View {
 }
 
 
-struct PersonImageView: View {
-    let imagePath: String
-    @State private var faceImage: UIImage?
-    
-    var body: some View {
-        Group {
-            if let faceImage = faceImage {
-                Image(uiImage: faceImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 40, height: 40)
-                    .clipShape(RoundedRectangle(cornerRadius: 5))
-                    .padding(.top, -15)
-            } else {
-                // Placeholder while loading
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 40, height: 40)
-                    .foregroundColor(.gray)
-                    .padding(.top, -15)
-                    .onAppear {
-                        loadFaceImage()
-                    }
-            }
-        }
-    }
-    
-    private func loadFaceImage() {
-        ApiHandler.loadFaceImage(from: imagePath) { image in
-            DispatchQueue.main.async {
-                self.faceImage = image
-            }
-        }
-    }
-}
 
 
-#Preview {
-    DetailsImageView(image: ImageeDetail(
-        id: 1,
-        path: "img1",
-        is_Sync: true,
-        capture_date: Date(),
-        event_date: Date(),
-        last_modified: Date(),
-        location: Locationn(Id: 1, Name: "Islamabad Pakistan", Lat: 40.7128, Lon: -74.0060),
-        events: [
-            Eventt(Id: 1, Name: "Birthday"),
-            Eventt(Id: 2, Name: "Wedding")
-        ],
-        persons: [
-            Personn(Id: 1, Name: "Kiran", Gender: "F", Path: "p8"),
-            Personn(Id: 2, Name: "Salman", Gender: "M", Path: "p12"),
-            Personn(Id: 3, Name: "Kashaf", Gender: "F", Path: "p18")
-        ]
-    ))
-}
+

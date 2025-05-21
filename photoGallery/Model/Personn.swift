@@ -6,9 +6,9 @@
 //
 
 import Foundation
-struct Personn{
-    var Id: Int
-    var Name: String
-    var Gender: String
-    var Path: String
+struct Personn: Codable{
+    var id: Int
+    var name: String
+    var gender: String
+    var path: String
 }

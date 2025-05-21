@@ -40,11 +40,6 @@ struct PicturesView: View {
                     LazyVGrid(columns: columns, spacing: 20) {
                         ForEach(images) { img in
                             
-//                            ImageCard(ImageURL: "BabyGirl")
-//                                .onTapGesture {
-//                                    print("Picture \(index + 1) tapped")
-//                                    selectedIndex = index
-//                                }
                             
                             NavigationLink(destination: PictureView(image: im.getImageDetails(imageId: img.id)!, screenName: screenName)) {
                                 ImageView(imagePath: img.fullPath)
@@ -67,7 +62,6 @@ struct PicturesView: View {
 }
 
 #Preview {
-//    NavigationStack {
-//        PicturesView()
-//    }
+//    PicturesView()
+
 }
