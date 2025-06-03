@@ -239,12 +239,12 @@ struct EditImageView: View {
                 
                 //                HStack {
                 Picker("Event", selection: $selectedEvent) {
-                    ForEach(viewModel.allEvents, id: \.self.Id) { event in
-                        Text(event.Name).tag(event)
+                    ForEach(viewModel.allEvents, id: \.self.id) { event in
+                        Text(event.name).tag(event)
                     }
                 }
                 .pickerStyle(MenuPickerStyle())
-                .onChange(of: selectedEvent ?? Eventt(Id: 0, Name: "")) { newEvent in
+                .onChange(of: selectedEvent ?? Eventt(id: 0, name: "")) { newEvent in
                     addEvent(newEvent)
                 }
                 //                }
@@ -278,7 +278,7 @@ struct EditImageView: View {
                 
                 Spacer()
                 
-                TextField("Enter Location", text: $viewModel.image.location.Name
+                TextField("Enter Location", text: $viewModel.image.location.name
 //                            Binding(
 //                    get: { viewModel.image.location.Name },
 //                    set: { newValue in
@@ -406,7 +406,7 @@ struct EditImageView: View {
             HStack {
                 ForEach(items, id: \.self) { item in
                     HStack {
-                        Text(item.Name)
+                        Text(item.name)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .background(Color.gray.opacity(0.2))
@@ -427,11 +427,11 @@ struct EditImageView: View {
     }
     
     private func removeEvent(_ event: Eventt) -> Void {
-        viewModel.image.events.removeAll { $0.Id == event.Id }
+        viewModel.image.events.removeAll { $0.id == event.id }
     }
     
     private func addEvent(_ event: Eventt) {
-        guard !viewModel.image.events.contains(where: { $0.Id == event.Id }) else { return }
+        guard !viewModel.image.events.contains(where: { $0.id == event.id }) else { return }
         viewModel.image.events.append(event)
 //        selectedEvent = nil // Reset selection
     }

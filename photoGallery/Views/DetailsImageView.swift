@@ -79,7 +79,7 @@ struct DetailsImageView: View {
                             .font(.headline)
                             .foregroundColor(.white)
                         Spacer()
-                        Text(image.events.first?.Name ?? "No Event")
+                        Text(image.events.first?.name ?? "No Event")
                             .font(.headline)
                             .foregroundColor(.white)
                     }
@@ -124,7 +124,7 @@ struct DetailsImageView: View {
                             .font(.headline)
                             .foregroundColor(.white)
                         Spacer()
-                        Text(image.location.Name)
+                        Text(image.location.name)
                             .font(.headline)
                             .foregroundColor(.white)
                     }

@@ -43,7 +43,7 @@ class SearchModelView: ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async {
             // Convert coordinates to Locationn objects
             let locationObjects = coordinates.map { coordinate in
-                Locationn(Id: 0, Name: "", Lat: coordinate.latitude, Lon: coordinate.longitude)
+                Locationn(id: 0, name: "", lat: coordinate.latitude, lon: coordinate.longitude)
             }
             
             let results = self.searchHandler.searchImages(

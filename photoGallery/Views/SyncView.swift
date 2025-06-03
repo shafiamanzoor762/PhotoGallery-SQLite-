@@ -13,12 +13,26 @@ struct SyncView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var navBarState: NavBarState
     
+    @State var isAlertShown: Bool = false
+    @State var alertMessage: String = ""
     var body: some View {
         VStack{
             TextComponent(title: "Sync -> \(isRequired ? " Sync Required" : " 4 Items to Sync")")
             Image("sync").frame(width:300, height: 300)
             ButtonComponent(title: "Sync", action: {
                 print("Sync Clicked")
+                ApiHandler.fetchUnsyncedImages { result in
+                    switch result {
+                    case .success(let message):
+                            alertMessage = "🎉 Success: \(message)"
+                            isAlertShown = true
+                    case .failure(let error):
+                        alertMessage = "🚨 Failed to sync: \(error.localizedDescription)"
+                            isAlertShown = true
+                            
+                    }
+                }
+
             })
         }.onAppear {
             navBarState.isHidden = true

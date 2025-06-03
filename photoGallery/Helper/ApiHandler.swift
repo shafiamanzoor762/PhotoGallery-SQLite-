@@ -7,6 +7,8 @@
 
 import Foundation
 import UIKit
+import SQLite
+
 
 enum NetworkError: Error {
     case invalidURL
@@ -424,5 +426,312 @@ class ApiHandler{
                 }
             }.resume()
         }
+    
+    static func fetchUnsyncedImages(completion: @escaping (Swift.Result<[ImageeDetail], Error>) -> Void) {
+
+        do {
+            let dbHandler = DBHandler()
+            guard let db = dbHandler.db else {
+                throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not initialized"])
+            }
+            
+            var payload: [[String: Any]] = []
+            
+            let unsyncedImages = try db.prepare(dbHandler.imageTable.filter(dbHandler.isSync == false))
+            
+            for imageRow in unsyncedImages {
+                let imageIdValue = imageRow[dbHandler.imageId]
+                let imagePathValue = imageRow[dbHandler.imagePath]
+                let captureDateValue = imageRow[dbHandler.captureDate]
+                let eventDateValue = imageRow[dbHandler.eventDate]
+                let lastModifiedValue = imageRow[dbHandler.lastModified]
+                let locationIdValue = imageRow[dbHandler.imageLocationId]
+                
+                // Read image bytes and base64 encode
+                let fileURL = ImageHandler.getFullImagePath(filename: imagePathValue)
+                guard let imageData = try? Data(contentsOf: fileURL) else {
+                    print("❌ Could not read image at path: \(imagePathValue)")
+                    continue
+                }
+                let imageBase64 = imageData.base64EncodedString()
+                
+                // Persons linked to this image
+                var persons: [[String: Any]] = []
+                let personQuery = dbHandler.imagePersonTable
+                    .join(dbHandler.personTable, on: dbHandler.imagePersonPersonId == dbHandler.personId)
+                    .filter(dbHandler.imagePersonImageId == imageIdValue)
+                
+                for row in try db.prepare(personQuery) {
+                    persons.append([
+                        "id": row[dbHandler.personId],
+                        "name": row[dbHandler.personName] ?? "unknown",
+                        "path": row[dbHandler.personPath] ?? "",
+                        "gender": row[dbHandler.personGender] ?? "U"
+                    ])
+                }
+                
+                // Events linked to this image
+                var events: [String] = []
+                let eventQuery = dbHandler.imageEventTable
+                    .join(dbHandler.eventTable, on: dbHandler.imageEventEventId == dbHandler.eventId)
+                    .filter(dbHandler.imageEventImageId == imageIdValue)
+                
+                for row in try db.prepare(eventQuery) {
+                    if let name = row[dbHandler.eventName] {
+                        events.append(name)
+                    }
+                }
+
+                // Compose one image's dictionary
+                let imageDict: [String: Any] = [
+                    "id": imageIdValue,
+                    "capture_date": captureDateValue ?? "1111-01-01",
+                    "event_date": eventDateValue ?? NSNull(),
+                    "last_modified": lastModifiedValue ?? "1111-01-01 00:00:00",
+                    "location": NSNull(), // You can add location object if needed
+                    "is_sync": false,
+                    "image_data": imageBase64,
+                    "events": events,
+                    "persons": persons
+                ]
+                
+                payload.append(imageDict)
+            }
+            
+            // Send JSON to Flask
+            guard let url = URL(string: "\(ApiHandler.baseUrl)get_unsync_images") else {
+                return completion(.failure(NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+            
+            //        guard let url = URL(string: "\(ApiHandler.baseUrl)get_unsync_images") else {
+            //                completion(.failure(NSError(domain: "Invalid URL", code: 0)))
+            //                return
+            //            }
+            //
+            //        print("start syncing...")
+            //
+            //            var request = URLRequest(url: url)
+            //            request.httpMethod = "GET"
+            
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    DispatchQueue.main.async { completion(.failure(error)) }
+                    return
+                }
+                
+                guard let data = data else {
+                    DispatchQueue.main.async {
+                        completion(.failure(NSError(domain: "No data", code: 0)))
+                    }
+                    return
+                }
+                
+                
+                do {
+                    // Decode into an array of dictionaries first
+                    guard let rawJson = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] else {
+                        throw NSError(domain: "Invalid JSON", code: 1)
+                    }
+                    
+                    // Fix null event_date and location
+                    let fixedJson = rawJson.map { dict -> [String: Any] in
+                        var copy = dict
+                        
+                        if copy["event_date"] is NSNull || copy["event_date"] == nil {
+                            copy["event_date"] = "1111-01-01"  // Provide default date
+                        }
+                        
+                        if copy["location"] is NSNull || copy["location"] == nil {
+                            copy["location"] = [
+                                "id": 0,
+                                "name": "",
+                                "lat": 0.0,
+                                "lon": 0.0
+                            ]
+                        }
+                        
+                        return copy
+                    }
+                    
+                    // Convert back to Data
+                    let fixedData = try JSONSerialization.data(withJSONObject: fixedJson, options: [])
+                    
+                    // Now decode your model
+                    let decoder = JSONDecoder()
+                    
+                    decoder.dateDecodingStrategy = .custom { decoder in
+                        let container = try decoder.singleValueContainer()
+                        let dateString = try container.decode(String.self)
+                        
+                        if let date = DateFormatter.yyyyMMdd_HHmmss.date(from: dateString) {
+                            return date
+                        } else if let date = DateFormatter.yyyyMMdd.date(from: dateString) {
+                            return date
+                        } else {
+                            throw DecodingError.dataCorruptedError(
+                                in: container,
+                                debugDescription: "Invalid date format: \(dateString)"
+                            )
+                        }
+                    }
+                    
+                    
+                    let images = try decoder.decode([ImageeDetail].self, from: fixedData)
+                    print("Decoded images: \(images)")
+                    
+                    DispatchQueue.main.async {
+                        completion(.success(images))
+                    }
+                    
+                } catch {
+                    print("Decoding failed: \(error)")
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
+                }
+                
+                
+            }.resume()
+        } catch {
+            completion(.failure(error))
+        }
+    }
+    
+    
+    
+    static func syncUnsyncedImages(completion: @escaping (Swift.Result<String, Error>) -> Void) {
+        ApiHandler.fetchUnsyncedImages { result in
+            switch result {
+            case .success(let images):
+                print("Found \(images.count) unsynced images.")
+
+                let group = DispatchGroup()
+                var lastError: Error?
+
+                for imageDetail in images {
+                    let imagePath = imageDetail.path
+                    let fullImageUrl = "\(ApiHandler.baseUrl)\(imagePath)"
+                    group.enter()
+
+                    ApiHandler.loadFaceImage(from: fullImageUrl) { image in
+                        do {
+                            guard let image = image, let imageData = image.jpegData(compressionQuality: 0.9) else {
+                                throw NSError(domain: "ImageError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid or missing image"])
+                            }
+
+                            let filename = "\(UUID().uuidString).jpg"
+                            let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                            let photogalleryDirectory = documentsDirectory.appendingPathComponent("photogallery")
+
+                            try FileManager.default.createDirectory(at: photogalleryDirectory, withIntermediateDirectories: true)
+                            let fileURL = photogalleryDirectory.appendingPathComponent(filename)
+                            try imageData.write(to: fileURL)
+
+                            let dbHandler = DBHandler()
+                            let imageHandler = ImageHandler(dbHandler: dbHandler)
+
+                            guard let db = dbHandler.db else {
+                                throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not initialized"])
+                            }
+
+                            let hash = HelperFunctions.generateImageHashSimple(imagePath: fileURL.path) ?? ""
+                            let imageQuery = dbHandler.imageTable.filter(dbHandler.hash == hash)
+
+                            if let existingImage = try db.pluck(imageQuery) {
+                                // Compare last modified date
+                                let existingDateStr = existingImage[dbHandler.lastModified]
+                                let newDateStr = imageDetail.event_date.toDatabaseString()
+
+                                if newDateStr > existingDateStr ?? "" {
+                                    print("📝 Updating image: \(filename)")
+                                    let update = imageQuery.update(
+                                        dbHandler.isDeleted <- false,
+                                        dbHandler.lastModified <- newDateStr
+                                    )
+                                    try db.run(update)
+
+                                    imageHandler.editImage(
+                                        imageId: Int(existingImage[dbHandler.imageId]),
+                                        persons: imageDetail.persons,
+                                        eventNames: imageDetail.events,
+                                        eventDate: newDateStr,
+                                        location: imageDetail.location
+                                    ) { editResult in
+                                        switch editResult {
+                                        case .success():
+                                            print("✅ Edited existing image")
+                                        case .failure(let error):
+                                            print("❌ Edit failed: \(error)")
+                                            try? FileManager.default.removeItem(at: fileURL)
+                                            lastError = error
+                                        }
+                                        group.leave()
+                                    }
+                                } else {
+                                    print("⏭ No update needed for image: \(filename)")
+                                    try? FileManager.default.removeItem(at: fileURL)
+                                    group.leave()
+                                }
+                            } else {
+                                // Insert new image
+                                let insert = dbHandler.imageTable.insert(
+                                    dbHandler.imagePath <- filename,
+                                    dbHandler.hash <- hash,
+                                    dbHandler.isSync <- false,
+                                    dbHandler.captureDate <- HelperFunctions.currentDateString(),
+                                    dbHandler.lastModified <- imageDetail.event_date.toDatabaseString(),
+                                    dbHandler.isDeleted <- false
+                                )
+
+                                let imageId = try db.run(insert)
+
+                                imageHandler.editImage(
+                                    imageId: Int(imageId),
+                                    persons: imageDetail.persons,
+                                    eventNames: imageDetail.events,
+                                    eventDate: imageDetail.event_date.toDatabaseString(),
+                                    location: imageDetail.location
+                                ) { editResult in
+                                    switch editResult {
+                                    case .success():
+                                        print("✅ Synced image: \(filename)")
+                                    case .failure(let error):
+                                        print("❌ Edit failed: \(error)")
+                                        try? FileManager.default.removeItem(at: fileURL)
+                                        lastError = error
+                                    }
+                                    group.leave()
+                                }
+                            }
+
+                        } catch {
+                            print("❌ Error syncing image from \(fullImageUrl): \(error)")
+                            lastError = error
+                            group.leave()
+                        }
+                    }
+                }
+
+                group.notify(queue: .main) {
+                    if let error = lastError {
+                        completion(.failure(error))
+                    } else {
+                        completion(.success("All unsynced images processed successfully."))
+                    }
+                }
+
+            case .failure(let error):
+                print("❌ Error fetching unsynced images: \(error)")
+                completion(.failure(error))
+            }
+        }
+    }
+
+
 
 }

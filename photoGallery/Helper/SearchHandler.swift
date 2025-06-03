@@ -88,7 +88,7 @@ class SearchHandler {
             // MARK: - Search by Location (coordinates)
             if let location = location {
                 let locationQuery = dbHandler.locationTable
-                    .filter(dbHandler.latitude == location.Lat && dbHandler.longitude == location.Lon)
+                    .filter(dbHandler.latitude == location.lat && dbHandler.longitude == location.lon)
                 
                 if let locationRow = try db.pluck(locationQuery) {
                     let locationId = locationRow[dbHandler.locationId]

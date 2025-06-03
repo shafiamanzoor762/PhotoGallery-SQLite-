@@ -16,7 +16,7 @@ struct SelectedEvents: View {
             HStack {
                 ForEach(items, id: \.self) { item in
                     HStack {
-                        Text(item.Name)
+                        Text(item.name)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .background(Color.gray.opacity(0.2))

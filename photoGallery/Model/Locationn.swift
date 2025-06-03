@@ -6,9 +6,10 @@
 //
 
 import Foundation
-struct Locationn{
-    var Id: Int
-    var Name: String
-    var Lat: Double
-    var Lon: Double
+struct Locationn: Codable{
+    var id: Int
+    var name: String
+    var lat: Double
+    var lon: Double
+    
 }

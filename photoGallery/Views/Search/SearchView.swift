@@ -114,10 +114,10 @@ struct SearchView: View {
     private var eventSection: some View {
         VStack(alignment: .leading) {
             SectionHeader("Event")
-            ForEach(events, id: \.self.Id) { event in
+            ForEach(events, id: \.self.id) { event in
                 HStack {
-                    Toggle(isOn: bindingForEvent(event.Name)) {
-                        Text(event.Name)
+                    Toggle(isOn: bindingForEvent(event.name)) {
+                        Text(event.name)
                     }
                 }
             }

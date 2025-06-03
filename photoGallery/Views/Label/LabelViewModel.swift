@@ -43,7 +43,7 @@ class LabelViewModel: ObservableObject {
     struct BulkEditData {
             var events: [Eventt] = []
             var eventDate: Date = Date()
-            var location: Locationn = Locationn(Id: 0, Name: "", Lat: 0.0, Lon: 0.0)
+            var location: Locationn = Locationn(id: 0, name: "", lat: 0.0, lon: 0.0)
         }
         
         func bulkEditSelectedImages() {
@@ -63,7 +63,7 @@ class LabelViewModel: ObservableObject {
                     persons: nil,
                     eventNames: bulkEditData.events,
                     eventDate: bulkEditData.eventDate.toDatabaseString(),
-                    location: Locationn(Id: 0, Name: bulkEditData.location.Name, Lat: 0.0, Lon: 0.0)
+                    location: Locationn(id: 0, name: bulkEditData.location.name, lat: 0.0, lon: 0.0)
                 ) { result in
                     DispatchQueue.main.async {
                         switch result {

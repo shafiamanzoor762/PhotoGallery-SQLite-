@@ -56,15 +56,15 @@ class EditImageViewModel: ObservableObject {
         error = nil
         
         let persons = image.persons.isEmpty ? nil : image.persons
-        let eventNames = image.events.isEmpty ? nil : image.events.map { $0.Name }
+        let eventNames = image.events.isEmpty ? nil : image.events.map { $0.name }
         let eventDate = image.event_date.toDatabaseString()
         
         
-        let lat = image.location.Lat.isNaN ? nil : 0.0
-        let lon = image.location.Lon.isNaN ? nil : 0.0
+        let lat = image.location.lat.isNaN ? nil : 0.0
+        let lon = image.location.lon.isNaN ? nil : 0.0
         
-        image.location.Lat = lat ?? 0.0
-        image.location.Lon = lon ?? 0.0
+        image.location.lat = lat ?? 0.0
+        image.location.lon = lon ?? 0.0
         
 //        print("Location Name:\(image.location.Name), \(image.location.Lat), \(image.location.Lon)")
         

@@ -45,7 +45,7 @@ class ImageHandler {
                 dbHandler.hash <- hash,
                 dbHandler.isSync <- false,
                 dbHandler.captureDate <- HelperFunctions.currentDateString(),
-                dbHandler.lastModified <- HelperFunctions.currentDateString(),
+                //dbHandler.lastModified <- HelperFunctions.currentDateString(),
                 dbHandler.isDeleted <- false
             )
             
@@ -316,8 +316,8 @@ class ImageHandler {
                     
                     for event in eventNames {
                         
-                        if event.Id <= 0 { continue }
-                        let eventId = event.Id
+                        if event.id <= 0 { continue }
+                        let eventId = event.id
                         
                         try db.run(dbHandler.imageEventTable.insert(
                             dbHandler.imageEventImageId <- imageId,
@@ -328,14 +328,14 @@ class ImageHandler {
                 }
                 
                 // Handle location
-                if let location = location, location.Lat != nil, location.Lon != nil {
+                if let location = location, location.lat != nil, location.lon != nil {
                     
 //                    let locationQuery = dbHandler.locationTable.filter(
 //                        dbHandler.latitude == location.Lat && dbHandler.longitude == location.Lon
 //                    )
                     
                     let locationQuery = dbHandler.locationTable.filter(
-                        dbHandler.locationName == location.Name
+                        dbHandler.locationName == location.name
                     )
                     
                     let locationId: Int
@@ -343,9 +343,9 @@ class ImageHandler {
                         locationId = existing[dbHandler.locationId]
                     } else {
                         locationId = Int(try db.run(dbHandler.locationTable.insert(
-                            dbHandler.locationName <- location.Name,
-                            dbHandler.latitude <- location.Lat,
-                            dbHandler.longitude <- location.Lon
+                            dbHandler.locationName <- location.name,
+                            dbHandler.latitude <- location.lat,
+                            dbHandler.longitude <- location.lon
                         )))
                     }
                     
@@ -441,10 +441,10 @@ class ImageHandler {
                 if let locationId = imageRow[dbHandler.imageLocationId] {
                     if let locationRow = try dbHandler.db?.pluck(dbHandler.locationTable.filter(dbHandler.locationId == locationId)) {
                         location = Locationn(
-                            Id: locationRow[dbHandler.locationId],
-                            Name: locationRow[dbHandler.locationName]!,
-                            Lat: locationRow[dbHandler.latitude] ?? 0.0,
-                            Lon: locationRow[dbHandler.longitude] ?? 0.0
+                            id: locationRow[dbHandler.locationId],
+                            name: locationRow[dbHandler.locationName]!,
+                            lat: locationRow[dbHandler.latitude] ?? 0.0,
+                            lon: locationRow[dbHandler.longitude] ?? 0.0
                         )
                     }
                 }
@@ -473,8 +473,8 @@ class ImageHandler {
                 
                 for eventRow in try dbHandler.db!.prepare(eventQuery) {
                     let event = Eventt(
-                        Id: eventRow[dbHandler.eventId],
-                        Name: eventRow[dbHandler.eventName] ?? ""
+                        id: eventRow[dbHandler.eventId],
+                        name: eventRow[dbHandler.eventName] ?? ""
                     )
                     events.append(event)
                 }
@@ -483,11 +483,11 @@ class ImageHandler {
                 return ImageeDetail(
                     id: imageRow[dbHandler.imageId],
                     path: imageRow[dbHandler.imagePath],
-                    is_Sync: imageRow[dbHandler.isSync] ?? false,
+                    is_sync: imageRow[dbHandler.isSync] ?? false,
                     capture_date: captureDate,
                     event_date: eventDate,
                     last_modified: lastModified,
-                    location: location ?? Locationn(Id: 0, Name: "", Lat: 0.0, Lon: 0.0),
+                    location: location ?? Locationn(id: 0, name: "", lat: 0.0, lon: 0.0),
                     events: events,
                     persons: persons
                 )
@@ -531,5 +531,9 @@ class ImageHandler {
         }
     }
     
-
+    static func getFullImagePath(filename:String) -> URL {
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                let photogalleryDirectory = documentsDirectory.appendingPathComponent("photogallery")
+                return photogalleryDirectory.appendingPathComponent(filename)
+    }
 }

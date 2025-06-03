@@ -146,7 +146,7 @@ class EventHandler {
             try db.run(insert)
             
             // 4. Return the new event
-            let newEvent = Eventt(Id: newId, Name: eventName)
+            let newEvent = Eventt(id: newId, name: eventName)
             completion(.success(newEvent))
             
         } catch {
@@ -173,8 +173,8 @@ class EventHandler {
             for row in try db.prepare(query) {
                 if let name = row[dbHandler.eventName] {
                     events.append(Eventt(
-                        Id: row[dbHandler.eventId],
-                        Name: name
+                        id: row[dbHandler.eventId],
+                        name: name
                     ))
                 }
             }

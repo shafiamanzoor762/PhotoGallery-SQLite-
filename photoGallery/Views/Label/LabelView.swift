@@ -78,6 +78,7 @@ struct LabelView: View {
                             .padding(5)
                             .background(Color(.systemGray4))
                             .cornerRadius(20)
+                            .shadow(radius: 5, x: 5, y: 5)
                             
                             Spacer()
                             
@@ -87,6 +88,7 @@ struct LabelView: View {
                                     .padding(5)
                                     .background(Color(.systemGray4))
                                     .cornerRadius(15)
+                                    .shadow(radius: 5, x: 5, y: 5)
                                 
                                 Spacer()
                                 
@@ -96,6 +98,7 @@ struct LabelView: View {
                                 .padding(5)
                                 .background(Color(.systemGray4))
                                 .cornerRadius(15)
+                                .shadow(radius: 5, x: 5, y: 5)
                                 
                                 Button("Clear") {
                                     viewModel.selectedImages.removeAll()
@@ -103,6 +106,7 @@ struct LabelView: View {
                                 .padding(5)
                                 .background(Color(.systemGray4))
                                 .cornerRadius(15)
+                                .shadow(radius: 5, x: 5, y: 5)
                             }
                         }
                         .padding([.leading,.trailing])
@@ -172,12 +176,12 @@ struct LabelView: View {
                             
                             
                             Picker("Select Event", selection: $selectedEvent) {
-                                ForEach(viewModel.allEvents, id: \.self.Id) { event in
-                                    Text(event.Name).tag(event)
+                                ForEach(viewModel.allEvents, id: \.self.id) { event in
+                                    Text(event.name).tag(event)
                                 }
                             }
                             .pickerStyle(MenuPickerStyle())
-                            .onChange(of: selectedEvent ?? Eventt(Id: 0, Name: "")) { newEvent in
+                            .onChange(of: selectedEvent ?? Eventt(id: 0, name: "")) { newEvent in
                                 addEvent(newEvent)
                             }
                             
@@ -206,7 +210,7 @@ struct LabelView: View {
                 }
                 
                 Section(header: Text("Location")) {
-                    TextField("Location Name", text: $viewModel.bulkEditData.location.Name)
+                    TextField("Location Name", text: $viewModel.bulkEditData.location.name)
                 }
             }
             
@@ -251,7 +255,7 @@ struct LabelView: View {
             HStack {
                 ForEach(items, id: \.self) { item in
                     HStack {
-                        Text(item.Name)
+                        Text(item.name)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .background(Color.gray.opacity(0.2))
@@ -272,11 +276,11 @@ struct LabelView: View {
     }
     
     private func removeEvent(_ event: Eventt) -> Void {
-        viewModel.bulkEditData.events.removeAll { $0.Id == event.Id }
+        viewModel.bulkEditData.events.removeAll { $0.id == event.id }
     }
     
     private func addEvent(_ event: Eventt) {
-        guard !viewModel.bulkEditData.events.contains(where: { $0.Id == event.Id }) else { return }
+        guard !viewModel.bulkEditData.events.contains(where: { $0.id == event.id }) else { return }
         viewModel.bulkEditData.events.append(event)
 //        selectedxEvent = Eventt(Id: 0, Name: "x") // Reset selection
     }
