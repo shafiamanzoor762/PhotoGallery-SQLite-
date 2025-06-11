@@ -41,11 +41,11 @@ struct BottomNavBar: View {
             }
             if tabCount == 3{
                 if selectedIndex == 0 {
-                    Cover2(TabviewName: "Details")
+                    Cover2(tabViewName: "Details")
                 } else if selectedIndex == 1 {
-                    Cover2(TabviewName: "Edit")
+                    Cover2(tabViewName: "Edit")
                 } else if selectedIndex == 2 {
-                    Cover2(TabviewName: "Delete")
+                    Cover2(tabViewName: "Delete")
                 }
             }
             GeometryReader { proxy in

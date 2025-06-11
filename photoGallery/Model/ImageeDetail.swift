@@ -7,13 +7,14 @@
 
 import Foundation
 
-struct ImageeDetail: Identifiable, Codable, Equatable{
+struct ImageeDetail: Identifiable, Codable, Equatable {
     var id: Int
     var path: String  // Store just the filename
     var is_sync: Bool
     var capture_date: Date
     var event_date: Date
     var last_modified: Date
+    var hash: String
     var location: Locationn
     var events: [Eventt]
     var persons: [Personn]

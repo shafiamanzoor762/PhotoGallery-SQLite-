@@ -9,8 +9,16 @@ import SwiftUI
 
 struct Cover2: View {
     let images: [String] = ["BabyGirl", "BabyGirl", "BabyGirl", "BabyGirl"]
-    @State var TabviewName: String = "Sync"
-    //@State var PrevView: String = "Label"
+    @State var tabViewName: String = "Sync"
+    
+    var emojiForView: String {
+            switch tabViewName {
+            case "Sync": return "🔄"
+            case "Search": return "🔎"
+            case "Undo Changes": return "⎌"
+            default: return ""
+            }
+        }
     
     var body: some View {
         VStack {
@@ -18,7 +26,7 @@ struct Cover2: View {
             
             // Top Bar
             HStack {
-                Text(TabviewName)
+                Text(emojiForView+" "+tabViewName)
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
@@ -37,21 +45,21 @@ struct Cover2: View {
             
             VStack {
                 
-                if TabviewName == "Sync" {
+                if tabViewName == "Sync" {
                     Spacer()
                     
                     SyncView(isRequired: false)
                     Spacer()
                 }
                 
-                if TabviewName == "Search" {
+                if tabViewName == "Search" {
                     SearchView()
                 }
 //                if TabviewName == "Bulk Edit" {
 ////                    BulkEditView()
 //                }
                 
-                if TabviewName == "Undo Changes" {
+                if tabViewName == "Undo Changes" {
                     UndoChangesView()
                 }
             }

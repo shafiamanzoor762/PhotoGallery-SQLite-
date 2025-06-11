@@ -3,34 +3,6 @@
 
 import SwiftUI
 
-//struct LabelView: View {
-//    let columns = [
-//        GridItem(.adaptive(minimum: 80), spacing: 5)
-////                    GridItem(.flexible()),
-////                    GridItem(.flexible()),
-////                    GridItem(.flexible()),
-////                    GridItem(.flexible())
-//    ]
-//    
-//    @StateObject private var viewModel = LabelViewModel()
-//    @State private var unLabeledImages: [GalleryImage] = []
-//    
-//    var body: some View {
-//
-//        
-//        PicturesView(screenName: "UnEdited", images: viewModel.unEditedImages)
-//        
-//        .onReceive(NotificationCenter.default.publisher(for: .refreshLabelView)) { _ in
-//            viewModel.refreshImages()
-//        }
-//    }
-//}
-
-
-
-//===============================
-
-
 struct LabelView: View {
     @StateObject private var viewModel = LabelViewModel()
 //    @State private var selectedImageIDs: Set<Int> = []
@@ -76,7 +48,7 @@ struct LabelView: View {
                                     .foregroundColor(Defs.seeGreenColor)
                             }
                             .padding(5)
-                            .background(Color(.systemGray4))
+                            .background(.white)
                             .cornerRadius(20)
                             .shadow(radius: 5, x: 5, y: 5)
                             
@@ -86,7 +58,7 @@ struct LabelView: View {
                                 Text("\(viewModel.selectedImages.count) selected")
                                     .font(.headline)
                                     .padding(5)
-                                    .background(Color(.systemGray4))
+                                    .background(.white)
                                     .cornerRadius(15)
                                     .shadow(radius: 5, x: 5, y: 5)
                                 
@@ -96,7 +68,7 @@ struct LabelView: View {
                                     viewModel.showBulkEditPopup = true
                                 }
                                 .padding(5)
-                                .background(Color(.systemGray4))
+                                .background(.white)
                                 .cornerRadius(15)
                                 .shadow(radius: 5, x: 5, y: 5)
                                 
@@ -104,7 +76,7 @@ struct LabelView: View {
                                     viewModel.selectedImages.removeAll()
                                 }
                                 .padding(5)
-                                .background(Color(.systemGray4))
+                                .background(.white)
                                 .cornerRadius(15)
                                 .shadow(radius: 5, x: 5, y: 5)
                             }

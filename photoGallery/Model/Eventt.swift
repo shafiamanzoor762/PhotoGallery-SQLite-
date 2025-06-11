@@ -6,7 +6,7 @@
 //
 
 import Foundation
-struct Eventt: Hashable, Codable{
+struct Eventt: Hashable, Codable {
     var id: Int
     var name: String
 }

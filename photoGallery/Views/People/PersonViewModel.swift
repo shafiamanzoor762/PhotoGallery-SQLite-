@@ -7,18 +7,6 @@
 
 import Foundation
 
-//struct Person: Identifiable {
-//    let id: Int
-//    let name: String
-//    let path: String
-//    let gender: String
-//}
-//
-//struct Img: Identifiable {
-//    let id: Int
-//    let path: String
-//}
-
 struct PersonGroup {
     let person: Personn
     let images: [GalleryImage]
@@ -94,6 +82,5 @@ class PersonViewModel: ObservableObject {
             print("Failed to create link: \(error.localizedDescription)")
         }
     }
-    
     
 }

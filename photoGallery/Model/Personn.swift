@@ -6,7 +6,7 @@
 //
 
 import Foundation
-struct Personn: Codable{
+struct Personn: Codable {
     var id: Int
     var name: String
     var gender: String

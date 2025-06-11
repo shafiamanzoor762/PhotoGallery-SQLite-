@@ -6,7 +6,7 @@
 //
 
 import Foundation
-struct Imagee{
+struct Imagee {
     var id: Int
     var path: String
     var is_Sync: Bool

@@ -18,15 +18,21 @@ class ImageHandler {
  
     // MARK: - Add Image
    
-    func addImage(path: String, filename: String, completion: @escaping (Swift.Result<Int, Error>) -> Void) {
+    func addImage(path: String, filename: String, hash: String? = "", completion: @escaping (Swift.Result<Int, Error>) -> Void) {
         do {
-            let hash = HelperFunctions.generateImageHashSimple(imagePath: path) ?? ""
+            var h = ""
+            if(hash == ""){
+                h = HelperFunctions.generateImageHashSimple(imagePath: path) ?? ""
+            } else {
+                h = hash!
+            }
+            
             guard let db = dbHandler.db else {
                 throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not initialized"])
             }
             
             // 1. Check for existing image
-            let existingImageQuery = dbHandler.imageTable.filter(dbHandler.hash == hash)
+            let existingImageQuery = dbHandler.imageTable.filter(dbHandler.hash == h)
             
             if let existingImage = try db.pluck(existingImageQuery) {
                 let update = existingImageQuery.update(
@@ -35,17 +41,17 @@ class ImageHandler {
                 )
                 try db.run(update)
                 completion(.success(Int(existingImage[dbHandler.imageId])))
-                print("⚠️ Image already exists with hash: \(hash)")
+                print("⚠️ Image already exists with hash: \(h)")
                 return
             }
             
             // 2. Insert new image
             let insert = dbHandler.imageTable.insert(
                 dbHandler.imagePath <- filename,
-                dbHandler.hash <- hash,
+                dbHandler.hash <- h,
                 dbHandler.isSync <- false,
                 dbHandler.captureDate <- HelperFunctions.currentDateString(),
-                //dbHandler.lastModified <- HelperFunctions.currentDateString(),
+                dbHandler.lastModified <- HelperFunctions.currentDateString(),
                 dbHandler.isDeleted <- false
             )
             
@@ -487,6 +493,7 @@ class ImageHandler {
                     capture_date: captureDate,
                     event_date: eventDate,
                     last_modified: lastModified,
+                    hash: imageRow[dbHandler.hash],
                     location: location ?? Locationn(id: 0, name: "", lat: 0.0, lon: 0.0),
                     events: events,
                     persons: persons

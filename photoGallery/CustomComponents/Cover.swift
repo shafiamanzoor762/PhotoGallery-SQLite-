@@ -21,6 +21,17 @@ struct Cover: View {
     @State var isNavigate: Bool = false
     @State private var path: [String] = []
     
+    var emojiForView: String {
+            switch viewName {
+            case "Label": return "🏷️"
+            case "People": return "👤"
+            case "Location": return "📍"
+            case "Event": return "🎉"
+            case "Date": return "📅"
+            default: return "🏷️"
+            }
+        }
+    
     @State private var isShowingCamera = false
     @State private var capturedImage: UIImage?
     @State private var isImagePickerPresented: Bool = false
@@ -40,7 +51,7 @@ struct Cover: View {
             mainContentView
                 .background(Defs.seeGreenColor.ignoresSafeArea())
                 .navigationDestination(for: String.self) { value in
-                    Cover2(TabviewName: value)
+                    Cover2(tabViewName: value)
                 }
                 .sheet(isPresented: $isImagePickerPresented) {
                     CustomImagePicker(contactImage: $inputImage)
@@ -88,7 +99,7 @@ struct Cover: View {
     
     private var topBar: some View {
         HStack {
-            Text(viewName)
+            Text(emojiForView+" "+viewName)
                 .font(.title)
                 .fontWeight(.bold)
                 .foregroundColor(.white)
@@ -145,10 +156,7 @@ struct Cover: View {
     private var currentView: some View {
         switch viewName {
         case "Label":
-            return AnyView(
-                LabelView()
-//                UndoChanges()
-            )
+            return AnyView(LabelView())
         case "People":
             return AnyView(PersonView())
         case "Location":

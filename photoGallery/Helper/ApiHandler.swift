@@ -21,8 +21,10 @@ enum NetworkError: Error {
 class ApiHandler{
 //    public static let baseUrl = "http://192.168.1.13:5000/"
 //        public static let baseUrl = "http://192.168.1.14:5000/"
-//    public static let baseUrl = "http://192.168.217.208:5000/"
+    //Hp
+//    public static let baseUrl = "http://192.168.1.6:5000/"
     
+    //VM
     public static let baseUrl = "http://192.168.64.4:5000/"
     
 
@@ -39,6 +41,9 @@ class ApiHandler{
     // Tagging
     public static let addTagPath = "\(ApiHandler.baseUrl)tagimage"
     public static let extractTagPath = "\(ApiHandler.baseUrl)extractImageTags"
+    
+    //Access Server Image
+    public static let imageUrl = "images/"
     
     // Health Check
     public static let checkHealth = "\(ApiHandler.baseUrl)health"
@@ -441,19 +446,20 @@ class ApiHandler{
             
             for imageRow in unsyncedImages {
                 let imageIdValue = imageRow[dbHandler.imageId]
-                let imagePathValue = imageRow[dbHandler.imagePath]
+//                let imagePathValue = imageRow[dbHandler.imagePath]
                 let captureDateValue = imageRow[dbHandler.captureDate]
                 let eventDateValue = imageRow[dbHandler.eventDate]
                 let lastModifiedValue = imageRow[dbHandler.lastModified]
+                let hash = imageRow[dbHandler.hash]
                 let locationIdValue = imageRow[dbHandler.imageLocationId]
                 
                 // Read image bytes and base64 encode
-                let fileURL = ImageHandler.getFullImagePath(filename: imagePathValue)
-                guard let imageData = try? Data(contentsOf: fileURL) else {
-                    print("❌ Could not read image at path: \(imagePathValue)")
-                    continue
-                }
-                let imageBase64 = imageData.base64EncodedString()
+//                let fileURL = ImageHandler.getFullImagePath(filename: imagePathValue)
+//                guard let imageData = try? Data(contentsOf: fileURL) else {
+//                    print("❌ Could not read image at path: \(imagePathValue)")
+//                    continue
+//                }
+//                let imageBase64 = imageData.base64EncodedString()
                 
                 // Persons linked to this image
                 var persons: [[String: Any]] = []
@@ -481,16 +487,41 @@ class ApiHandler{
                         events.append(name)
                     }
                 }
+                
+                
+                for row in try db.prepare(eventQuery) {
+                    if let name = row[dbHandler.eventName] {
+                        events.append(name)
+                    }
+                }
+                
+                // Location linked to this image
+                
+                var location: String? = nil
+                if let locationId = imageRow[dbHandler.imageLocationId] {
+                    if let locationRow = try dbHandler.db?.pluck(dbHandler.locationTable.filter(dbHandler.locationId == locationId)) {
+                        let id = locationRow[dbHandler.locationId]
+                        let name = locationRow[dbHandler.locationName] ?? "Unknown"
+                        let lat = locationRow[dbHandler.latitude] ?? 0.0
+                        let lon = locationRow[dbHandler.longitude] ?? 0.0
+
+                        location = """
+                        {"id": \(id), "name": "\(name)", "lat": \(lat), "lon": \(lon)}
+                        """
+                    }
+                }
+
 
                 // Compose one image's dictionary
                 let imageDict: [String: Any] = [
                     "id": imageIdValue,
-                    "capture_date": captureDateValue ?? "1111-01-01",
+                    "capture_date": captureDateValue ?? NSNull(),
                     "event_date": eventDateValue ?? NSNull(),
-                    "last_modified": lastModifiedValue ?? "1111-01-01 00:00:00",
-                    "location": NSNull(), // You can add location object if needed
+                    "last_modified": lastModifiedValue ?? NSNull(),
+                    "location": location ?? NSNull(), // You can add location object if needed
                     "is_sync": false,
-                    "image_data": imageBase64,
+                    "hash": hash,
+//                    "image_data": imageBase64,
                     "events": events,
                     "persons": persons
                 ]
@@ -615,7 +646,7 @@ class ApiHandler{
 
                 for imageDetail in images {
                     let imagePath = imageDetail.path
-                    let fullImageUrl = "\(ApiHandler.baseUrl)\(imagePath)"
+                    let fullImageUrl = "\(ApiHandler.imageUrl)\(imagePath)"
                     group.enter()
 
                     ApiHandler.loadFaceImage(from: fullImageUrl) { image in
@@ -639,7 +670,8 @@ class ApiHandler{
                                 throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not initialized"])
                             }
 
-                            let hash = HelperFunctions.generateImageHashSimple(imagePath: fileURL.path) ?? ""
+//                            let hash = HelperFunctions.generateImageHashSimple(imagePath: fileURL.path) ?? ""
+                            let hash = imageDetail.hash
                             let imageQuery = dbHandler.imageTable.filter(dbHandler.hash == hash)
 
                             if let existingImage = try db.pluck(imageQuery) {
@@ -651,7 +683,7 @@ class ApiHandler{
                                     print("📝 Updating image: \(filename)")
                                     let update = imageQuery.update(
                                         dbHandler.isDeleted <- false,
-                                        dbHandler.lastModified <- newDateStr
+                                        dbHandler.lastModified <- HelperFunctions.currentDateString()
                                     )
                                     try db.run(update)
 
