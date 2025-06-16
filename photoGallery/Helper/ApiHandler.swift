@@ -22,10 +22,10 @@ class ApiHandler{
 //    public static let baseUrl = "http://192.168.1.13:5000/"
 //        public static let baseUrl = "http://192.168.1.14:5000/"
     //Hp
-//    public static let baseUrl = "http://192.168.1.6:5000/"
+    public static let baseUrl = "http://192.168.1.5:5000/"
     
     //VM
-    public static let baseUrl = "http://192.168.64.4:5000/"
+//    public static let baseUrl = "http://192.168.64.4:5000/"
     
 
     
@@ -506,7 +506,7 @@ class ApiHandler{
                         let lon = locationRow[dbHandler.longitude] ?? 0.0
 
                         location = """
-                        {"id": \(id), "name": "\(name)", "lat": \(lat), "lon": \(lon)}
+                        {"id": \(id), "name": "\(name)", "latitude": \(lat), "longitude": \(lon)}
                         """
                     }
                 }
@@ -677,7 +677,7 @@ class ApiHandler{
                             if let existingImage = try db.pluck(imageQuery) {
                                 // Compare last modified date
                                 let existingDateStr = existingImage[dbHandler.lastModified]
-                                let newDateStr = imageDetail.event_date.toDatabaseString()
+                                let newDateStr = imageDetail.last_modified.toDatabaseString()
 
                                 if newDateStr > existingDateStr ?? "" {
                                     print("📝 Updating image: \(filename)")
@@ -715,8 +715,8 @@ class ApiHandler{
                                     dbHandler.imagePath <- filename,
                                     dbHandler.hash <- hash,
                                     dbHandler.isSync <- false,
-                                    dbHandler.captureDate <- HelperFunctions.currentDateString(),
-                                    dbHandler.lastModified <- imageDetail.event_date.toDatabaseString(),
+                                    dbHandler.captureDate <- imageDetail.capture_date.toDatabaseString(),
+                                    dbHandler.lastModified <- HelperFunctions.currentDateString(),
                                     dbHandler.isDeleted <- false
                                 )
 

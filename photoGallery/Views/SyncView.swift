@@ -21,7 +21,7 @@ struct SyncView: View {
             Image("sync").frame(width:300, height: 300)
             ButtonComponent(title: "Sync", action: {
                 print("Sync Clicked")
-                ApiHandler.fetchUnsyncedImages() { result in
+                ApiHandler.syncUnsyncedImages() { result in
                     switch result {
                     case .success(let message):
                             alertMessage = "🎉 Success: \(message)"

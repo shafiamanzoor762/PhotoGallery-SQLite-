@@ -301,10 +301,10 @@ class ImageHandler {
                 guard try db.pluck(imageQuery) != nil else {
                     throw NSError(domain: "", code: 404, userInfo: [NSLocalizedDescriptionKey: "Image not found"])
                 }
-                
+//                if eventDate == "1111-01-01" ?
                 // Update core image record
                 try db.run(imageQuery.update(
-                    dbHandler.eventDate <- eventDate,
+                    dbHandler.eventDate <- eventDate == "1111-01-01" ? nil : eventDate,
                     dbHandler.lastModified <- HelperFunctions.currentDateString()
                 ))
                 
@@ -320,16 +320,77 @@ class ImageHandler {
 //                        ))
 //                    }
                     
+//                    let matchingEvents = dbHandler.eventTable.filter { event in
+//                        eventNames.contains(event[dbHandler.eventName])
+//                    }
+                    
+                    
+                    // Filter out nils from eventNames
+//                    let nonNilEventNames = eventNames.compactMap { $0 }
+//
+//                    guard !nonNilEventNames.isEmpty else {
+//                        return // or handle empty case
+//                    }
+//
+//                    let nameExpression = Expression<String>(dbHandler.eventName.template)
+//                    
+//                    let matchingEvents = dbHandler.eventTable.filter(
+//                        dbHandler.eventName != nil &&
+//                        nonNilEventNames.contains(nameExpression)
+//                    )
+//
+//                    for event in try db.prepare(matchingEvents) {
+//                        try db.run(dbHandler.imageEventTable.insert(
+//                            dbHandler.imageEventImageId <- imageId,
+//                            dbHandler.imageEventEventId <- event[dbHandler.eventId]
+//                        ))
+//                    }
+                    
+
+                    
+//                    for event in eventNames {
+//                        
+//                        if event.id <= 0 { continue }
+//                        let eventId = event.id
+//                        
+//                        try db.run(dbHandler.imageEventTable.insert(
+//                            dbHandler.imageEventImageId <- imageId,
+//                            dbHandler.imageEventEventId <- eventId
+//                        ))
+//                    }
+                    
+                    //---------
+                    
                     for event in eventNames {
+                        guard event.id <= 0 else {
+                            try db.run(dbHandler.imageEventTable.insert(
+                                dbHandler.imageEventImageId <- imageId,
+                                dbHandler.imageEventEventId <- event.id  // Convert to Int64
+                            ))
+                            continue
+                        }
                         
-                        if event.id <= 0 { continue }
-                        let eventId = event.id
+                        let existingEvent = try db.pluck(
+                            dbHandler.eventTable
+                                .filter(dbHandler.eventName == event.name)
+                        )
+                        
+                        let eventId: Int64
+                        
+                        if let existing = existingEvent {
+                            eventId = Int64(existing[dbHandler.eventId]) // This is Int64
+                        } else {
+                            eventId = try db.run(dbHandler.eventTable.insert(
+                                dbHandler.eventName <- event.name
+                            ))
+                        }
                         
                         try db.run(dbHandler.imageEventTable.insert(
                             dbHandler.imageEventImageId <- imageId,
-                            dbHandler.imageEventEventId <- eventId
+                            dbHandler.imageEventEventId <- Int(eventId)  // Using Int64
                         ))
                     }
+                    
                     
                 }
                 
@@ -428,8 +489,8 @@ class ImageHandler {
                 guard let captureDateStr = imageRow[dbHandler.captureDate],
 //                      let eventDateStr = imageRow[dbHandler.eventDate],
                       let lastModifiedStr = imageRow[dbHandler.lastModified],
-                      let captureDate = Date.fromISOString(captureDateStr),
-                      let lastModified = Date.fromISOString(lastModifiedStr) else {
+                      let captureDate = Date.fromISOString(captureDateStr) ?? Date.fromDatabaseString(captureDateStr),
+                      let lastModified = Date.fromISOString(lastModifiedStr) ?? Date.fromDatabaseString(lastModifiedStr) else {
                     print("Error parsing dates for image \(imageId)")
                     return nil
                 }
@@ -437,9 +498,9 @@ class ImageHandler {
                 // Handle event date (can be null)
                 let eventDate: Date
                 if let eventDateStr = imageRow[dbHandler.eventDate] {
-                    eventDate = Date.fromDatabaseString(eventDateStr) ?? captureDate
+                    eventDate = Date.fromISOString(eventDateStr) ?? Date.fromDatabaseString(eventDateStr) ?? Date()
                 } else {
-                    eventDate = captureDate
+                    eventDate = Date()
                 }
                 
                 // 2. Get location if exists

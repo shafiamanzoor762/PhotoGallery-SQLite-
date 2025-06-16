@@ -57,9 +57,80 @@ class DBHandler: ObservableObject{
     let linkPerson1Id = Expression<Int>("person1_id")
     let linkPerson2Id = Expression<Int>("person2_id")
 
+    //MARK: - HISTORY TABLES
+    // MARK: -
+    let locationHistoryTable = Table("location_history")
+    let locationHisId = Expression<Int>("sr_no")
+    let locationHisOriginalId = Expression<Int>("id")
+    let locationHisName = Expression<String?>("name")
+    let locationHisLatitude = Expression<Double?>("latitude")
+    let locationHisLongitude = Expression<Double?>("longitude")
+    let locationHisVersion = Expression<Int>("version_no")
+    let locationHisIsActive = Expression<Bool>("is_active")
+    let locationHisChangedAt = Expression<String?>("changed_at")
+    
+    let personHistoryTable = Table("person_history")
+    let personHisId = Expression<Int>("sr_no")
+    let personHisOriginalId = Expression<Int>("id")
+    let personHisName = Expression<String?>("name")
+    let personHisPath = Expression<String?>("path")
+    let personHisGender = Expression<String?>("gender")
+    let personHisVersion = Expression<Int>("version_no")
+    let personHisIsActive = Expression<Bool>("is_active")
+    let personHisChangedAt = Expression<String?>("changed_at")
+    
+    let eventHistoryTable = Table("event_history")
+    let eventHisId = Expression<Int>("sr_no")
+    let eventHisOriginalId = Expression<Int>("id")
+    let eventHisName = Expression<String?>("name")
+    let eventHisVersion = Expression<Int>("version_no")
+    let eventHisIsActive = Expression<Bool>("is_active")
+    let eventHisChangedAt = Expression<String?>("changed_at")
+    
+    let imageHistoryTable = Table("image_history")
+    let imageHisId = Expression<Int>("sr_no")
+    let imageHisOriginalId = Expression<Int>("id")
+    let imageHisPath = Expression<String>("path")
+    let imageHisIsSync = Expression<Bool?>("is_sync")
+    let imageHisCaptureDate = Expression<String?>("capture_date")
+    let imageHisEventDate = Expression<String?>("event_date")
+    let imageHisLastModified = Expression<String?>("last_modified")
+    let imageHisLocationId = Expression<Int?>("location_id")
+    let imageHisIsDeleted = Expression<Bool?>("is_deleted")
+    let imageHisHash = Expression<String>("hash")
+    let imageHisVersion = Expression<Int>("version_no")
+    let imageHisIsActive = Expression<Bool>("is_active")
+    let imageHisChangedAt = Expression<String?>("changed_at")
+    
+    let imagePersonHistoryTable = Table("image_person_history")
+    let imagePersonHisId = Expression<Int>("sr_no")
+    let imagePersonHisImageId = Expression<Int>("image_id")
+    let imagePersonHisPersonId = Expression<Int>("person_id")
+    let imagePersonHisVersion = Expression<Int>("version_no")
+    let imagePersonHisIsActive = Expression<Bool>("is_active")
+    let imagePersonHisChangedAt = Expression<String?>("changed_at")
+    
+    let imageEventHistoryTable = Table("image_event_history")
+    let imageEventHisId = Expression<Int>("sr_no")
+    let imageEventHisImageId = Expression<Int>("image_id")
+    let imageEventHisEventId = Expression<Int>("event_id")
+    let imageEventHisVersion = Expression<Int>("version_no")
+    let imageEventHisIsActive = Expression<Bool>("is_active")
+    let imageEventHisChangedAt = Expression<String?>("changed_at")
+    
+    let linkHistoryTable = Table("link_history")
+    let linkHisId = Expression<Int>("sr_no")
+    let linkHisPerson1Id = Expression<Int>("person1_id")
+    let linkHisPerson2Id = Expression<Int>("person2_id")
+    let linkHisVersion = Expression<Int>("version_no")
+    let linkHisIsActive = Expression<Bool>("is_active")
+    let linkHisChangedAt = Expression<String?>("changed_at")
+    
     init() {
         connectToDatabase()
         createTables()
+        createHistoryTables()
+        createTriggers()
 //        try? populateTestDataForGrouping()
         
 //        generateRandomLinks(count: 10, db: db!)
@@ -150,7 +221,235 @@ class DBHandler: ObservableObject{
         } catch {
             print("Error creating tables: \(error)")
         }
-    }   
+    }
+    
+    func createHistoryTables() {
+            do {
+                // Location History
+                try db?.run(locationHistoryTable.create(ifNotExists: true) { table in
+                    table.column(locationHisId, primaryKey: .autoincrement)
+                    table.column(locationHisOriginalId)
+                    table.column(locationHisName)
+                    table.column(locationHisLatitude)
+                    table.column(locationHisLongitude)
+                    table.column(locationHisVersion)
+                    table.column(locationHisIsActive)
+                    table.column(locationHisChangedAt)
+                })
+                
+                // Person History
+                try db?.run(personHistoryTable.create(ifNotExists: true) { table in
+                    table.column(personHisId, primaryKey: .autoincrement)
+                    table.column(personHisOriginalId)
+                    table.column(personHisName)
+                    table.column(personHisPath)
+                    table.column(personHisGender)
+                    table.column(personHisVersion)
+                    table.column(personHisIsActive)
+                    table.column(personHisChangedAt)
+                })
+                
+                // Event History
+                try db?.run(eventHistoryTable.create(ifNotExists: true) { table in
+                    table.column(eventHisId, primaryKey: .autoincrement)
+                    table.column(eventHisOriginalId)
+                    table.column(eventHisName)
+                    table.column(eventHisVersion)
+                    table.column(eventHisIsActive)
+                    table.column(eventHisChangedAt)
+                })
+                
+                // Image History
+                try db?.run(imageHistoryTable.create(ifNotExists: true) { table in
+                    table.column(imageHisId, primaryKey: .autoincrement)
+                    table.column(imageHisOriginalId)
+                    table.column(imageHisPath)
+                    table.column(imageHisIsSync)
+                    table.column(imageHisCaptureDate)
+                    table.column(imageHisEventDate)
+                    table.column(imageHisLastModified)
+                    table.column(imageHisLocationId)
+                    table.column(imageHisIsDeleted)
+                    table.column(imageHisHash)
+                    table.column(imageHisVersion)
+                    table.column(imageHisIsActive)
+                    table.column(imageHisChangedAt)
+                })
+                
+                // Image-Person History
+                try db?.run(imagePersonHistoryTable.create(ifNotExists: true) { table in
+                    table.column(imagePersonHisId, primaryKey: .autoincrement)
+                    table.column(imagePersonHisImageId)
+                    table.column(imagePersonHisPersonId)
+                    table.column(imagePersonHisVersion)
+                    table.column(imagePersonHisIsActive)
+                    table.column(imagePersonHisChangedAt)
+                })
+                
+                // Image-Event History
+                try db?.run(imageEventHistoryTable.create(ifNotExists: true) { table in
+                    table.column(imageEventHisId, primaryKey: .autoincrement)
+                    table.column(imageEventHisImageId)
+                    table.column(imageEventHisEventId)
+                    table.column(imageEventHisVersion)
+                    table.column(imageEventHisIsActive)
+                    table.column(imageEventHisChangedAt)
+                })
+                
+                // Link History
+                try db?.run(linkHistoryTable.create(ifNotExists: true) { table in
+                    table.column(linkHisId, primaryKey: .autoincrement)
+                    table.column(linkHisPerson1Id)
+                    table.column(linkHisPerson2Id)
+                    table.column(linkHisVersion)
+                    table.column(linkHisIsActive)
+                    table.column(linkHisChangedAt)
+                })
+                
+                print("All history tables created successfully!")
+            } catch {
+                print("Error creating history tables: \(error)")
+            }
+        }
+        
+        func createTriggers() {
+            do {
+                // Location Trigger
+                try db?.run("""
+                    CREATE TRIGGER IF NOT EXISTS trg_location_history
+                    AFTER UPDATE ON location
+                    BEGIN
+                        INSERT INTO location_history (id, name, latitude, longitude, version_no, is_active, changed_at)
+                        SELECT 
+                            old.id,
+                            old.name,
+                            old.latitude,
+                            old.longitude,
+                            IFNULL((SELECT MAX(version_no) FROM location_history WHERE id = old.id), 0) + 1,
+                            0,
+                            datetime('now')
+                        FROM location old
+                        WHERE old.id = NEW.id;
+                    END;
+                """)
+                
+                // Person Trigger
+                try db?.run("""
+                    CREATE TRIGGER IF NOT EXISTS trg_person_history
+                    AFTER UPDATE ON person
+                    BEGIN
+                        INSERT INTO person_history (id, name, path, gender, version_no, is_active, changed_at)
+                        SELECT 
+                            old.id,
+                            old.name,
+                            old.path,
+                            old.gender,
+                            IFNULL((SELECT MAX(version_no) FROM person_history WHERE id = old.id), 0) + 1,
+                            0,
+                            datetime('now')
+                        FROM person old
+                        WHERE old.id = NEW.id;
+                    END;
+                """)
+                
+                // Event Trigger
+                try db?.run("""
+                    CREATE TRIGGER IF NOT EXISTS trg_event_history
+                    AFTER UPDATE ON event
+                    BEGIN
+                        INSERT INTO event_history (id, name, version_no, is_active, changed_at)
+                        SELECT 
+                            old.id,
+                            old.name,
+                            IFNULL((SELECT MAX(version_no) FROM event_history WHERE id = old.id), 0) + 1,
+                            0,
+                            datetime('now')
+                        FROM event old
+                        WHERE old.id = NEW.id;
+                    END;
+                """)
+                
+                // Image Trigger
+                try db?.run("""
+                    CREATE TRIGGER IF NOT EXISTS trg_image_history
+                    AFTER UPDATE ON image
+                    BEGIN
+                        INSERT INTO image_history (id, path, is_sync, capture_date, event_date, last_modified, location_id, is_deleted, hash, version_no, is_active, changed_at)
+                        SELECT 
+                            old.id,
+                            old.path,
+                            old.is_sync,
+                            old.capture_date,
+                            old.event_date,
+                            old.last_modified,
+                            old.location_id,
+                            old.is_deleted,
+                            old.hash,
+                            IFNULL((SELECT MAX(version_no) FROM image_history WHERE id = old.id), 0) + 1,
+                            0,
+                            datetime('now')
+                        FROM image old
+                        WHERE old.id = NEW.id;
+                    END;
+                """)
+                
+                // Image-Person Trigger
+                try db?.run("""
+                    CREATE TRIGGER IF NOT EXISTS trg_image_person_history
+                    AFTER UPDATE ON image_person
+                    BEGIN
+                        INSERT INTO image_person_history (image_id, person_id, version_no, is_active, changed_at)
+                        SELECT 
+                            old.image_id,
+                            old.person_id,
+                            IFNULL((SELECT MAX(version_no) FROM image_person_history WHERE image_id = old.image_id AND person_id = old.person_id), 0) + 1,
+                            0,
+                            datetime('now')
+                        FROM image_person old
+                        WHERE old.image_id = NEW.image_id AND old.person_id = NEW.person_id;
+                    END;
+                """)
+                
+                // Image-Event Trigger
+                try db?.run("""
+                    CREATE TRIGGER IF NOT EXISTS trg_image_event_history
+                    AFTER UPDATE ON image_event
+                    BEGIN
+                        INSERT INTO image_event_history (image_id, event_id, version_no, is_active, changed_at)
+                        SELECT 
+                            old.image_id,
+                            old.event_id,
+                            IFNULL((SELECT MAX(version_no) FROM image_event_history WHERE image_id = old.image_id AND event_id = old.event_id), 0) + 1,
+                            0,
+                            datetime('now')
+                        FROM image_event old
+                        WHERE old.image_id = NEW.image_id AND old.event_id = NEW.event_id;
+                    END;
+                """)
+                
+                // Link Trigger
+                try db?.run("""
+                    CREATE TRIGGER IF NOT EXISTS trg_link_history
+                    AFTER UPDATE ON link
+                    BEGIN
+                        INSERT INTO link_history (person1_id, person2_id, version_no, is_active, changed_at)
+                        SELECT 
+                            old.person1_id,
+                            old.person2_id,
+                            IFNULL((SELECT MAX(version_no) FROM link_history WHERE person1_id = old.person1_id AND person2_id = old.person2_id), 0) + 1,
+                            0,
+                            datetime('now')
+                        FROM link old
+                        WHERE old.person1_id = NEW.person1_id AND old.person2_id = NEW.person2_id;
+                    END;
+                """)
+                
+                print("All triggers created successfully!")
+            } catch {
+                print("Error creating triggers: \(error)")
+            }
+        }
+
     
     
     
