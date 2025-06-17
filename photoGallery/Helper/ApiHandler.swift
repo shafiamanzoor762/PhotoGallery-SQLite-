@@ -497,7 +497,7 @@ class ApiHandler{
                 
                 // Location linked to this image
                 
-                var location: String? = nil
+                var location: [String]? = nil
                 if let locationId = imageRow[dbHandler.imageLocationId] {
                     if let locationRow = try dbHandler.db?.pluck(dbHandler.locationTable.filter(dbHandler.locationId == locationId)) {
                         let id = locationRow[dbHandler.locationId]
@@ -505,9 +505,7 @@ class ApiHandler{
                         let lat = locationRow[dbHandler.latitude] ?? 0.0
                         let lon = locationRow[dbHandler.longitude] ?? 0.0
 
-                        location = """
-                        {"id": \(id), "name": "\(name)", "latitude": \(lat), "longitude": \(lon)}
-                        """
+                        location = [name, String(lat), String(lon)]
                     }
                 }
 
@@ -538,16 +536,7 @@ class ApiHandler{
             request.httpMethod = "POST"
             request.addValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = try JSONSerialization.data(withJSONObject: payload)
-            
-            //        guard let url = URL(string: "\(ApiHandler.baseUrl)get_unsync_images") else {
-            //                completion(.failure(NSError(domain: "Invalid URL", code: 0)))
-            //                return
-            //            }
-            //
-            //        print("start syncing...")
-            //
-            //            var request = URLRequest(url: url)
-            //            request.httpMethod = "GET"
+
             
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
@@ -577,15 +566,16 @@ class ApiHandler{
                             copy["event_date"] = "1111-01-01"  // Provide default date
                         }
                         
+                        //print("\(copy["location"])555555---5555")
                         if copy["location"] is NSNull || copy["location"] == nil {
                             copy["location"] = [
                                 "id": 0,
                                 "name": "",
-                                "lat": 0.0,
-                                "lon": 0.0
+                                "latitude": 0.0,
+                                "longitude": 0.0
                             ]
                         }
-                        
+                        print("\(copy["location"])555555---5555")
                         return copy
                     }
                     
@@ -599,7 +589,7 @@ class ApiHandler{
                         let container = try decoder.singleValueContainer()
                         let dateString = try container.decode(String.self)
                         
-                        if let date = DateFormatter.yyyyMMdd_HHmmss.date(from: dateString) {
+                        if let date = DateFormatter.sqlServerWithoutMillis.date(from: dateString) {
                             return date
                         } else if let date = DateFormatter.yyyyMMdd.date(from: dateString) {
                             return date
@@ -673,13 +663,46 @@ class ApiHandler{
 //                            let hash = HelperFunctions.generateImageHashSimple(imagePath: fileURL.path) ?? ""
                             let hash = imageDetail.hash
                             let imageQuery = dbHandler.imageTable.filter(dbHandler.hash == hash)
+                            
+//                            for per in  imageDetail.persons {
+//                                per.id = try PersonHandler().getOrInsertPersonId(person: per)
+//                            }
+                            
+                            var updatedPersons = imageDetail.persons
+                            
+                            for i in 0..<updatedPersons.count {
+                                var per = imageDetail.persons[i]  // create a mutable copy
+                                per.id = try PersonHandler().getOrInsertPersonId(person: per)
+                                updatedPersons[i] = per
+                            }
+                            print(updatedPersons)
+                            
+                            
+                            var updatedEvents = imageDetail.events
+                            
+                            for i in 0..<updatedEvents.count {
+                                var ev = imageDetail.events[i]  // create a mutable copy
+                                ev = EventHandler(dbHandler: DBHandler()).addEventIfNotExists(eventName: ev.name, completion: {_ in })!
+                                updatedEvents[i] = ev
+                            }
+                            print("7777777777----------\(updatedEvents)")
+                            
+
+                                        
 
                             if let existingImage = try db.pluck(imageQuery) {
                                 // Compare last modified date
-                                let existingDateStr = existingImage[dbHandler.lastModified]
-                                let newDateStr = imageDetail.last_modified.toDatabaseString()
+                                let existingDateStr = existingImage[dbHandler.lastModified]!
+                                let newSqlDate = imageDetail.last_modified
+                                
+                                guard let sqliteDate = DateFormatter.sqlServerWithoutMillis.date(from: existingDateStr ) else {
+                                    print("❌ One of the date conversions failed")
+                                    return
+                                }
+                                
+                                print("\(newSqlDate)444444444----->\(sqliteDate)")
 
-                                if newDateStr > existingDateStr ?? "" {
+                                if newSqlDate > sqliteDate {
                                     print("📝 Updating image: \(filename)")
                                     let update = imageQuery.update(
                                         dbHandler.isDeleted <- false,
@@ -689,9 +712,9 @@ class ApiHandler{
 
                                     imageHandler.editImage(
                                         imageId: Int(existingImage[dbHandler.imageId]),
-                                        persons: imageDetail.persons,
-                                        eventNames: imageDetail.events,
-                                        eventDate: newDateStr,
+                                        persons: updatedPersons,
+                                        eventNames: updatedEvents,
+                                        eventDate: imageDetail.event_date.toDatabaseString(),
                                         location: imageDetail.location
                                     ) { editResult in
                                         switch editResult {
@@ -724,13 +747,14 @@ class ApiHandler{
 
                                 imageHandler.editImage(
                                     imageId: Int(imageId),
-                                    persons: imageDetail.persons,
-                                    eventNames: imageDetail.events,
+                                    persons: updatedPersons,
+                                    eventNames: updatedEvents,
                                     eventDate: imageDetail.event_date.toDatabaseString(),
                                     location: imageDetail.location
                                 ) { editResult in
                                     switch editResult {
                                     case .success():
+                                            
                                         print("✅ Synced image: \(filename)")
                                     case .failure(let error):
                                         print("❌ Edit failed: \(error)")

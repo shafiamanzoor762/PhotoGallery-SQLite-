@@ -59,101 +59,65 @@ class ImageHandler {
             print("✅ Image saved: \(path)")
             
             // 3. Process faces asynchronously
-            DispatchQueue.global(qos: .userInitiated).async {
-                HelperFunctions.checkServerStatus { isServerActive in
-                    guard isServerActive, let image = UIImage(contentsOfFile: path) else {
-                        completion(.success(Int(imageId)))
-                        return
-                    }
-                    
-                    DispatchQueue.global(qos: .userInitiated).async {
-                        HelperFunctions.checkServerStatus { isServerActive in
-                            guard isServerActive, let image = UIImage(contentsOfFile: path) else {
-                                completion(.success(Int(imageId)))
-                                return
-                            }
-                            
-                            // Call the API to process the image
-                            ApiHandler.processImage(image: image) { result in
-                                switch result {
-                                case .success(let data):
-                                    do {
-                                        // Parse the JSON response
-                                        if let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-                                            for faceData in jsonArray {
-                                                guard let status = faceData["status"] as? String,
-                                                      let facePath = faceData["path"] as? String else {
-                                                    continue
-                                                }
-                                                
-                                                let name = faceData["name"] as? String ?? "unknown"
-                                                let gender = faceData["gender"] as? String ?? "U"
-                                                
-                                                // Insert or update the face data in local database
-                                                self.insertOrUpdateFace(
-                                                    imageId: Int(imageId),
-                                                    facePath: facePath,
-                                                    status: status,
-                                                    name: name,
-                                                    gender: gender,
-                                                    db: db
-                                                )
-                                                
-                                            }
-                                        }
-                                        completion(.success(Int(imageId)))
-                                    } catch {
-                                        print("JSON parsing error: \(error)")
-                                        completion(.success(Int(imageId))) // Still complete even if parsing fails
-                                    }
-                                    
-                                case .failure(let error):
-                                    print("API error: \(error)")
-                                    completion(.success(Int(imageId))) // Still complete even if API fails
-                                }
-                            }
-                        }
-                    }
-                    
-                    
-                    // Use the completion handler version of extractFacesViaApi
-//                    ApiHandler.extractFacesViaApi(from: image) { extractedFaces in
-//                        guard !extractedFaces.isEmpty else {
-//                            completion(.success(Int(imageId)))
-//                            return
-//                        }
-//                        
-//                        
-//                        // Process faces in parallel
-//                        let group = DispatchGroup()
-//                        var lastError: Error?
-//                        
-//                        for facePath in extractedFaces {
-//                            group.enter()
-//                            
-//                            self.processFace(
-//                                facePath: facePath,
-//                                imageId: Int(imageId),
-//                                db: db,
-//                                completion: { error in
-//                                    if let error = error {
-//                                        lastError = error
-//                                    }
-//                                    group.leave()
-//                                }
-//                            )
-//                        }
-//                        
-//                        group.notify(queue: .main) {
-//                            if let error = lastError {
-//                                completion(.failure(error))
-//                            } else {
+//            DispatchQueue.global(qos: .userInitiated).async {
+//                HelperFunctions.checkServerStatus { isServerActive in
+//                    guard isServerActive, let image = UIImage(contentsOfFile: path) else {
+//                        completion(.success(Int(imageId)))
+//                        return
+//                    }
+//                    
+//                    DispatchQueue.global(qos: .userInitiated).async {
+//                        HelperFunctions.checkServerStatus { isServerActive in
+//                            guard isServerActive, let image = UIImage(contentsOfFile: path) else {
 //                                completion(.success(Int(imageId)))
+//                                return
+//                            }
+//                            
+//                            // Call the API to process the image
+//                            ApiHandler.processImage(image: image) { result in
+//                                switch result {
+//                                case .success(let data):
+//                                    do {
+//                                        // Parse the JSON response
+//                                        if let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+//                                            for faceData in jsonArray {
+//                                                guard let status = faceData["status"] as? String,
+//                                                      let facePath = faceData["path"] as? String else {
+//                                                    continue
+//                                                }
+//                                                
+//                                                let name = faceData["name"] as? String ?? "unknown"
+//                                                let gender = faceData["gender"] as? String ?? "U"
+//                                                
+//                                                // Insert or update the face data in local database
+//                                                self.insertOrUpdateFace(
+//                                                    imageId: Int(imageId),
+//                                                    facePath: facePath,
+//                                                    status: status,
+//                                                    name: name,
+//                                                    gender: gender,
+//                                                    db: db
+//                                                )
+//                                                
+//                                            }
+//                                        }
+//                                        completion(.success(Int(imageId)))
+//                                    } catch {
+//                                        print("JSON parsing error: \(error)")
+//                                        completion(.success(Int(imageId))) // Still complete even if parsing fails
+//                                    }
+//                                    
+//                                case .failure(let error):
+//                                    print("API error: \(error)")
+//                                    completion(.success(Int(imageId))) // Still complete even if API fails
+//                                }
 //                            }
 //                        }
 //                    }
-                }
-            }
+//
+//                    
+//                }
+//            }
             
         } catch {
             completion(.failure(error))
@@ -307,59 +271,10 @@ class ImageHandler {
                     dbHandler.eventDate <- eventDate == "1111-01-01" ? nil : eventDate,
                     dbHandler.lastModified <- HelperFunctions.currentDateString()
                 ))
-                
+                print("done with image")
                 // Handle events
                 if let eventNames = eventNames, !eventNames.isEmpty {
                     try db.run(dbHandler.imageEventTable.filter(dbHandler.imageEventImageId == imageId).delete())
-                    
-//                    let matchingEvents = dbHandler.eventTable.filter(eventNames.contains(dbHandler.eventName))
-//                    for event in try db.prepare(matchingEvents) {
-//                        try db.run(dbHandler.imageEventTable.insert(
-//                            dbHandler.imageEventImageId <- imageId,
-//                            dbHandler.imageEventEventId <- event[dbHandler.eventId]
-//                        ))
-//                    }
-                    
-//                    let matchingEvents = dbHandler.eventTable.filter { event in
-//                        eventNames.contains(event[dbHandler.eventName])
-//                    }
-                    
-                    
-                    // Filter out nils from eventNames
-//                    let nonNilEventNames = eventNames.compactMap { $0 }
-//
-//                    guard !nonNilEventNames.isEmpty else {
-//                        return // or handle empty case
-//                    }
-//
-//                    let nameExpression = Expression<String>(dbHandler.eventName.template)
-//                    
-//                    let matchingEvents = dbHandler.eventTable.filter(
-//                        dbHandler.eventName != nil &&
-//                        nonNilEventNames.contains(nameExpression)
-//                    )
-//
-//                    for event in try db.prepare(matchingEvents) {
-//                        try db.run(dbHandler.imageEventTable.insert(
-//                            dbHandler.imageEventImageId <- imageId,
-//                            dbHandler.imageEventEventId <- event[dbHandler.eventId]
-//                        ))
-//                    }
-                    
-
-                    
-//                    for event in eventNames {
-//                        
-//                        if event.id <= 0 { continue }
-//                        let eventId = event.id
-//                        
-//                        try db.run(dbHandler.imageEventTable.insert(
-//                            dbHandler.imageEventImageId <- imageId,
-//                            dbHandler.imageEventEventId <- eventId
-//                        ))
-//                    }
-                    
-                    //---------
                     
                     for event in eventNames {
                         guard event.id <= 0 else {
@@ -393,9 +308,9 @@ class ImageHandler {
                     
                     
                 }
-                
+                print("done with events")
                 // Handle location
-                if let location = location, location.lat != nil, location.lon != nil {
+                if let location = location, location.latitude != nil, location.longitude != nil {
                     
 //                    let locationQuery = dbHandler.locationTable.filter(
 //                        dbHandler.latitude == location.Lat && dbHandler.longitude == location.Lon
@@ -411,14 +326,14 @@ class ImageHandler {
                     } else {
                         locationId = Int(try db.run(dbHandler.locationTable.insert(
                             dbHandler.locationName <- location.name,
-                            dbHandler.latitude <- location.lat,
-                            dbHandler.longitude <- location.lon
+                            dbHandler.latitude <- location.latitude,
+                            dbHandler.longitude <- location.longitude
                         )))
                     }
                     
                     try db.run(imageQuery.update(dbHandler.imageLocationId <- locationId))
                 }
-                
+                print("done with location")
                 // Handle persons
                 if let persons = persons {
                     try db.run(dbHandler.imagePersonTable.filter(dbHandler.imagePersonImageId == imageId).delete())
@@ -456,6 +371,7 @@ class ImageHandler {
                         ))
                     }
                 }
+                print("done with persons")
             }
             
             completion(.success(()))
@@ -490,7 +406,7 @@ class ImageHandler {
 //                      let eventDateStr = imageRow[dbHandler.eventDate],
                       let lastModifiedStr = imageRow[dbHandler.lastModified],
                       let captureDate = Date.fromISOString(captureDateStr) ?? Date.fromDatabaseString(captureDateStr),
-                      let lastModified = Date.fromISOString(lastModifiedStr) ?? Date.fromDatabaseString(lastModifiedStr) else {
+                      let lastModified =  DateFormatter.sqlServerWithoutMillis.date(from: lastModifiedStr ) ?? Date.fromDatabaseString(lastModifiedStr) else {
                     print("Error parsing dates for image \(imageId)")
                     return nil
                 }
@@ -510,8 +426,8 @@ class ImageHandler {
                         location = Locationn(
                             id: locationRow[dbHandler.locationId],
                             name: locationRow[dbHandler.locationName]!,
-                            lat: locationRow[dbHandler.latitude] ?? 0.0,
-                            lon: locationRow[dbHandler.longitude] ?? 0.0
+                            latitude: locationRow[dbHandler.latitude] ?? 0.0,
+                            longitude: locationRow[dbHandler.longitude] ?? 0.0
                         )
                     }
                 }
@@ -555,7 +471,7 @@ class ImageHandler {
                     event_date: eventDate,
                     last_modified: lastModified,
                     hash: imageRow[dbHandler.hash],
-                    location: location ?? Locationn(id: 0, name: "", lat: 0.0, lon: 0.0),
+                    location: location ?? Locationn(id: 0, name: "", latitude: 0.0, longitude: 0.0),
                     events: events,
                     persons: persons
                 )

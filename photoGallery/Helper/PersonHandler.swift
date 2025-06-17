@@ -217,5 +217,26 @@ class PersonHandler {
             return try db.pluck(query) != nil
         }
     
-     
+    public func getOrInsertPersonId(person: Personn) throws -> Int {
+        guard let db = dbHandler.db else {
+            throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not initialized"])
+        }
+
+        // Create the filter query - match by name (you can add more filters like gender or path if needed)
+        let query = dbHandler.personTable.filter(dbHandler.personName == person.name)
+
+        if let existing = try db.pluck(query) {
+            // Person exists — return their ID
+            return existing[dbHandler.personId]
+        } else {
+            // Person doesn't exist — insert new
+            let newId = try db.run(dbHandler.personTable.insert(
+                dbHandler.personName <- person.name,
+                dbHandler.personGender <- person.gender,
+                dbHandler.personPath <- person.path
+            ))
+            return Int(newId)
+        }
+    }
+
 }

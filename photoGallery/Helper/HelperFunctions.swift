@@ -12,8 +12,7 @@ class HelperFunctions{
     // MARK: - Helper Methods
     
     public static func currentDateString() -> String {
-        let formatter = ISO8601DateFormatter()
-        return formatter.string(from: Date())
+        return DateFormatter.sqlServerWithoutMillis.string(from: Date())
     }
     
     //MARK: - Check Server Availability

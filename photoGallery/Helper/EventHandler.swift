@@ -16,7 +16,7 @@ class EventHandler {
     init(dbHandler: DBHandler) {
         self.dbHandler = dbHandler
     }
-
+    
     // MARK: - Group by Event Name
     func groupImagesByEventName() -> [String: [GalleryImage]]? {
         do {
@@ -116,21 +116,65 @@ class EventHandler {
         }
     }
     
-    func addEventIfNotExists(eventName: String, completion: @escaping (Swift.Result<Eventt, Error>) -> Void) {
+    //    func addEventIfNotExists(eventName: String, completion: @escaping (Swift.Result<Eventt, Error>) -> Void) {
+    //        do {
+    //            guard let db = dbHandler.db else {
+    //                completion(.failure(NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not connected"])))
+    //                return
+    //            }
+    //
+    //            // 1. Check if event already exists (case-insensitive comparison)
+    //            let existingEventQuery = dbHandler.eventTable
+    //                .filter(dbHandler.eventName.lowercaseString == eventName.lowercased())
+    //                .limit(1)
+    //
+    //            if try db.pluck(existingEventQuery) != nil {
+    //                completion(.failure(NSError(domain: "EventError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Event already exists"])))
+    //                return
+    //            }
+    //
+    //            // 2. Get the next available ID
+    //            let maxId = try db.scalar(dbHandler.eventTable.select(dbHandler.eventId.max)) ?? 0
+    //            let newId = maxId + 1
+    //
+    //            // 3. Insert new event
+    //            let insert = dbHandler.eventTable.insert(
+    //                dbHandler.eventId <- newId,
+    //                dbHandler.eventName <- eventName
+    //            )
+    //
+    //            try db.run(insert)
+    //
+    //            // 4. Return the new event
+    //            let newEvent = Eventt(id: newId, name: eventName)
+    //            completion(.success(newEvent))
+    //
+    //        } catch {
+    //            completion(.failure(error))
+    //        }
+    //    }
+    
+    
+    public func addEventIfNotExists(eventName: String, completion: @escaping (Swift.Result<Eventt, Error>) -> Void) -> Eventt? {
         do {
             guard let db = dbHandler.db else {
                 completion(.failure(NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not connected"])))
-                return
+                return nil
             }
             
-            // 1. Check if event already exists (case-insensitive comparison)
+            // 1. Check if event already exists (case-insensitive)
             let existingEventQuery = dbHandler.eventTable
                 .filter(dbHandler.eventName.lowercaseString == eventName.lowercased())
                 .limit(1)
             
-            if try db.pluck(existingEventQuery) != nil {
-                completion(.failure(NSError(domain: "EventError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Event already exists"])))
-                return
+            if let existingRow = try db.pluck(existingEventQuery) {
+                // Event already exists, return it
+                let existingEvent = Eventt(
+                    id: existingRow[dbHandler.eventId],
+                    name: existingRow[dbHandler.eventName] ?? ""
+                )
+                completion(.success(existingEvent))
+                return existingEvent
             }
             
             // 2. Get the next available ID
@@ -142,17 +186,19 @@ class EventHandler {
                 dbHandler.eventId <- newId,
                 dbHandler.eventName <- eventName
             )
-            
             try db.run(insert)
             
             // 4. Return the new event
             let newEvent = Eventt(id: newId, name: eventName)
             completion(.success(newEvent))
+            return newEvent
             
         } catch {
             completion(.failure(error))
+            return nil
         }
     }
+    
     
     
     func fetchAllEvents() -> [Eventt] {

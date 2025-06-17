@@ -15,15 +15,49 @@ import SwiftUI
 //        formatter.dateFormat = "yyyy-MM-dd"
 //        return formatter
 //    }()
-//}
-
-//extension Date {
-//    func toString(format: String = "yyyy-MM-dd") -> String {
+//    
+//    static let iso8601Full: DateFormatter = {
 //        let formatter = DateFormatter()
-//        formatter.dateFormat = format
-//        return formatter.string(from: self)
+//        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+//        formatter.calendar = Calendar(identifier: .iso8601)
+//        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+//        formatter.locale = Locale(identifier: "en_US_POSIX")
+//        return formatter
+//    }()
+//    
+//    static let yyyyMMdd_HHmmss: DateFormatter = {
+//        let formatter = DateFormatter()
+//        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+//        formatter.locale = Locale(identifier: "en_US_POSIX")
+//        return formatter
+//    }()
+//    
+//    static let iso8601WithZ: ISO8601DateFormatter = {
+//        let formatter = ISO8601DateFormatter()
+//        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+//        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+//        return formatter
+//    }()
+//}
+//
+//extension Date {
+//    func toDatabaseString() -> String {
+//        return DateFormatter.yyyyMMdd.string(from: self)
+//    }
+//    
+//    static func fromDatabaseString(_ string: String) -> Date? {
+//        return DateFormatter.yyyyMMdd.date(from: string)
+//    }
+//    
+//    func toISOString() -> String {
+//        return DateFormatter.iso8601Full.string(from: self)
+//    }
+//    
+//    static func fromISOString(_ string: String) -> Date? {
+//        return DateFormatter.iso8601Full.date(from: string)
 //    }
 //}
+
 
 extension DateFormatter {
     static let yyyyMMdd: DateFormatter = {
@@ -47,26 +81,46 @@ extension DateFormatter {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter
     }()
-
+    
+    
+    // ✅ NEW: SQL Server format with milliseconds
+    static let sqlServerWithoutMillis: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        return formatter
+    }()
 }
 
 extension Date {
     func toDatabaseString() -> String {
         return DateFormatter.yyyyMMdd.string(from: self)
     }
-    
+
     static func fromDatabaseString(_ string: String) -> Date? {
         return DateFormatter.yyyyMMdd.date(from: string)
     }
-    
+
     func toISOString() -> String {
         return DateFormatter.iso8601Full.string(from: self)
     }
-    
+
     static func fromISOString(_ string: String) -> Date? {
         return DateFormatter.iso8601Full.date(from: string)
     }
+
+    func toSqlServerFormat() -> String {
+        return DateFormatter.sqlServerWithoutMillis.string(from: self)
+    }
+    
+    // ✅ NEW: Parse SQL Server format with milliseconds
+    static func fromSqlServerFormat(_ string: String) -> Date? {
+        return DateFormatter.sqlServerWithoutMillis.date(from: string)
+    }
 }
+
+
 
 
 extension UIImage {

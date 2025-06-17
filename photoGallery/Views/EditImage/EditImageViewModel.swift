@@ -60,11 +60,11 @@ class EditImageViewModel: ObservableObject {
         let eventDate = image.event_date.toDatabaseString()
         
         
-        let lat = image.location.lat.isNaN ? nil : 0.0
-        let lon = image.location.lon.isNaN ? nil : 0.0
+        let lat = image.location.latitude.isNaN ? nil : 0.0
+        let lon = image.location.longitude.isNaN ? nil : 0.0
         
-        image.location.lat = lat ?? 0.0
-        image.location.lon = lon ?? 0.0
+        image.location.latitude = lat ?? 0.0
+        image.location.longitude = lon ?? 0.0
         
 //        print("Location Name:\(image.location.Name), \(image.location.Lat), \(image.location.Lon)")
         
