@@ -24,6 +24,8 @@ class DBHandler: ObservableObject{
     let personName = Expression<String?>("name")
     let personPath = Expression<String?>("path")
     let personGender = Expression<String?>("gender")
+    let personDob = Expression<String?>("dob")
+    let personAge = Expression<Int?>("age")
 
     // MARK: - Event Table
     let eventTable = Table("event")
@@ -75,6 +77,8 @@ class DBHandler: ObservableObject{
     let personHisName = Expression<String?>("name")
     let personHisPath = Expression<String?>("path")
     let personHisGender = Expression<String?>("gender")
+    let personHisDob = Expression<String?>("dob")
+    let personHisAge = Expression<Int?>("age")
     let personHisVersion = Expression<Int>("version_no")
     let personHisIsActive = Expression<Bool>("is_active")
     let personHisChangedAt = Expression<String?>("changed_at")
@@ -166,6 +170,8 @@ class DBHandler: ObservableObject{
                 table.column(personName)
                 table.column(personPath)
                 table.column(personGender)
+                table.column(personDob)
+                table.column(personAge)
                 table.check(personGender == "M" || personGender == "F" || personGender == "U")
             })
 
@@ -244,6 +250,8 @@ class DBHandler: ObservableObject{
                     table.column(personHisName)
                     table.column(personHisPath)
                     table.column(personHisGender)
+                    table.column(personHisDob)
+                    table.column(personHisAge)
                     table.column(personHisVersion)
                     table.column(personHisIsActive)
                     table.column(personHisChangedAt)

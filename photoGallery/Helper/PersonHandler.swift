@@ -25,11 +25,20 @@ class PersonHandler {
             return nil
         }
         
+        let dob: Date
+        if let dobStr = personRow[dbHandler.personDob] {
+            dob = Date.fromISOString(dobStr) ?? Date.fromDatabaseString(dobStr) ?? Date()
+        } else {
+            dob = Date()
+        }
+        
         return Personn(
             id: personRow[dbHandler.personId],
             name: personRow[dbHandler.personName] ?? "",
             gender: personRow[dbHandler.personGender] ?? "",
-            path: personRow[dbHandler.personPath] ?? ""
+            path: personRow[dbHandler.personPath] ?? "",
+            dob: dob,
+            age: personRow[dbHandler.personAge] ?? 0
         )
     }
     
@@ -92,6 +101,8 @@ class PersonHandler {
                   let personId = personDict["id"] as? Int,
                   let personName = personDict["name"] as? String,
                   let personPath = personDict["path"] as? String,
+                  let personDob = personDict["dob"] as? Date,
+                  let personAge = personDict["age"] as? Int,
                   let personGender = personDict["gender"] as? String,
                   let imagesArray = groupDict["Images"] as? [[String: Any]] else {
                 continue
@@ -101,7 +112,10 @@ class PersonHandler {
                 id: personId,
                 name: personName,
                 gender: personGender,
-                path: personPath
+                path: personPath,
+                dob: personDob,
+                age: personAge
+                
             )
             
             let images = imagesArray.compactMap { imageDict -> GalleryImage? in

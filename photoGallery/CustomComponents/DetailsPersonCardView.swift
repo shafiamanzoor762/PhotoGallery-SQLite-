@@ -34,6 +34,24 @@ struct DetailsPersonCardView: View {
                         .foregroundColor(Defs.seeGreenColor)
                     
                 }
+                HStack{
+                    Text("DoB")
+                        .font(.caption)
+                    
+                    Text(person.dob.toDatabaseString())
+                        .font(.caption)
+                        .foregroundColor(Defs.seeGreenColor)
+                    
+                }
+                HStack{
+                    Text("Age")
+                        .font(.caption)
+                    
+                    Text(String(person.age))
+                        .font(.caption)
+                        .foregroundColor(Defs.seeGreenColor)
+                    
+                }
             }
 //            .padding()
             .frame(width: 120)

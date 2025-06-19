@@ -439,11 +439,21 @@ class ImageHandler {
                     .filter(dbHandler.imagePersonTable[dbHandler.imagePersonImageId] == imageId)
                 
                 for personRow in try dbHandler.db!.prepare(personQuery) {
+                    
+                    let dob: Date
+                    if let dobStr = personRow[dbHandler.personDob] {
+                        dob = Date.fromISOString(dobStr) ?? Date.fromDatabaseString(dobStr) ?? Date()
+                    } else {
+                        dob = Date()
+                    }
+                    
                     let person = Personn(
                         id: personRow[dbHandler.personId],
                         name: personRow[dbHandler.personName] ?? "",
                         gender: personRow[dbHandler.personGender] ?? "",
-                        path: personRow[dbHandler.personPath] ?? ""
+                        path: personRow[dbHandler.personPath] ?? "",
+                        dob: dob,
+                        age: personRow[dbHandler.personAge] ?? 0
                     )
                     persons.append(person)
                 }

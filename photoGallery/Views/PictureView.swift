@@ -88,7 +88,7 @@ struct PictureView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack {
                     ForEach(image.persons, id: \.id) { p in
-                        PersonImageCardView(imagePath: p.path)
+                        PersonImageCardView(imagePath: p.path, isUnknown: p.name.lowercased() == "unknown")
                         
                             .onTapGesture {
                                 if viewModel.selectedPersonId == p.id && viewModel.showTooltip {
@@ -116,7 +116,7 @@ struct PictureView: View {
                             .padding([.top, .leading])
                         
                         if let firstPerson = viewModel.selectedPersons.first {
-                            PersonImageCardView(imagePath: firstPerson.path)
+                            PersonImageCardView(imagePath: firstPerson.path, isUnknown: firstPerson.name.lowercased() == "unknown")
                                 .id(firstPerson.id)
                                 .padding([.top])
                         }
@@ -209,40 +209,68 @@ struct PictureView: View {
 
 struct PersonImageCardView: View {
     let imagePath: String
+    let isUnknown: Bool
     @State private var faceImage: UIImage?
     
     var body: some View {
         Group {
-            if let faceImage = faceImage {
+            ZStack(alignment: .bottomTrailing) {
+                if let faceImage = faceImage {
+                    
+                    //                Image(uiImage: faceImage)
+                    //                    .resizable()
+                    //                    .aspectRatio(contentMode: .fit)
+                    //                    .frame(width: 25, height: 25)
+                    //                    .cornerRadius(25)
+                    //                    .overlay(
+                    //                        RoundedRectangle(cornerRadius: 20)
+                    //                            .stroke(Color.black, lineWidth: 1)
+                    //                    )
+                    //                    .onTapGesture {
+                    //
+                    //                }
+                    
+                    
+                    // Person image
+                    Image(uiImage: faceImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 30, height: 30)
+                        .cornerRadius(30)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.black, lineWidth: 1)
+                        )
+                    
+                } else {
+                    // Placeholder while loading
+                    Image(systemName: "person.crop.circle.fill")
+                    
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 30, height: 30)
+                        .cornerRadius(30)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.black, lineWidth: 1)
+                        )
+                        .onAppear {
+                            loadFaceImage()
+                        }
+                }
                 
-                Image(uiImage: faceImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 25, height: 25)
-                    .cornerRadius(25)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.black, lineWidth: 1)
-                    )
-//                    .onTapGesture {
-//                    
-//                }
-                
-            } else {
-                // Placeholder while loading
-                Image(systemName: "person.crop.circle.fill")
-                
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 25, height: 25)
-                    .cornerRadius(25)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.black, lineWidth: 1)
-                    )
-                    .onAppear {
-                        loadFaceImage()
-                    }
+                // Show question mark only if name is "unknown"
+                if isUnknown {
+                    Circle()
+                        .fill(Color.blue)
+                        .frame(width: 24, height: 24)
+                        .overlay(
+                            Text("?")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                        )
+                        .offset(x: -4, y: -4)
+                }
             }
         }
     }

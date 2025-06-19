@@ -12,7 +12,9 @@ struct SearchView: View {
     // MARK: - State Properties
     @StateObject private var viewModel = SearchModelView()
     @State private var nameInput = ""
+    @State private var ageInput = ""
     @State private var selectedNames: [String] = []
+    @State private var selectedAges: [String] = []
 //    @Binding private var selectedGender: String
     @State private var selectedEvents: [String] = []
     @State private var selectedDates: [Date] = []
@@ -74,6 +76,18 @@ struct SearchView: View {
                 addButton(action: addName)
             }
             selectedItemsView(items: selectedNames, removeAction: removeName)
+        }
+    }
+    
+    private var ageSection: some View {
+        VStack(alignment: .leading) {
+            SectionHeader("Age")
+            HStack {
+                TextField("Age", text: $nameInput)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                addButton(action: addAge)
+            }
+            selectedItemsView(items: selectedAges, removeAction: removeAge)
         }
     }
     
@@ -274,6 +288,17 @@ struct SearchView: View {
     }
     
     private func removeName(_ name: String) {
+        selectedNames.removeAll { $0 == name }
+    }
+    
+    private func addAge() {
+        if !nameInput.isEmpty && !selectedNames.contains(nameInput) {
+            selectedNames.append(nameInput)
+            nameInput = ""
+        }
+    }
+    
+    private func removeAge(_ name: String) {
         selectedNames.removeAll { $0 == name }
     }
     

@@ -22,7 +22,7 @@ class ApiHandler{
 //    public static let baseUrl = "http://192.168.1.13:5000/"
 //        public static let baseUrl = "http://192.168.1.14:5000/"
     //Hp
-    public static let baseUrl = "http://192.168.1.5:5000/"
+    public static let baseUrl = "http://192.168.1.7:5000/"
     
     //VM
 //    public static let baseUrl = "http://192.168.64.4:5000/"
@@ -432,6 +432,29 @@ class ApiHandler{
             }.resume()
         }
     
+    func generateLinksDictionary(for personId: Int) throws -> [String: [String]] {
+
+        let personList = try PersonHandler().getPersonAndLinkedAsList(personId: personId)
+        
+        // Ensure at least one person (the main person) exists
+        guard let mainPersonPath = personList.first?.path else {
+            return [:]
+        }
+
+        // Get paths of all others except the first
+        let linkedPaths = personList
+            .dropFirst() // Exclude the main person
+            .compactMap { $0.path }
+
+        // Create the links dictionary
+        let links: [String: [String]] = [
+            mainPersonPath: linkedPaths
+        ]
+        
+        return links
+    }
+
+    
     static func fetchUnsyncedImages(completion: @escaping (Swift.Result<[ImageeDetail], Error>) -> Void) {
 
         do {
@@ -463,6 +486,7 @@ class ApiHandler{
                 
                 // Persons linked to this image
                 var persons: [[String: Any]] = []
+                var links: [String: [String]] = [:]
                 let personQuery = dbHandler.imagePersonTable
                     .join(dbHandler.personTable, on: dbHandler.imagePersonPersonId == dbHandler.personId)
                     .filter(dbHandler.imagePersonImageId == imageIdValue)
@@ -474,20 +498,32 @@ class ApiHandler{
                         "path": row[dbHandler.personPath] ?? "",
                         "gender": row[dbHandler.personGender] ?? "U"
                     ])
+                    
+                    if let personId = row[dbHandler.personId] as? Int {
+                            do {
+                                let newLinks = try ApiHandler().generateLinksDictionary(for: personId)
+                                // Merge newLinks into the main links dictionary
+                                for (key, value) in newLinks {
+                                    if links[key] != nil {
+                                        // Append new values and remove duplicates
+                                        links[key]! += value
+                                        links[key]! = Array(Set(links[key]!))
+                                    } else {
+                                        links[key] = value
+                                    }
+                                }
+                            } catch {
+                                print("❌ Failed to generate links for person \(personId): \(error)")
+                            }
+                        }
                 }
+                print(links)
                 
                 // Events linked to this image
                 var events: [String] = []
                 let eventQuery = dbHandler.imageEventTable
                     .join(dbHandler.eventTable, on: dbHandler.imageEventEventId == dbHandler.eventId)
                     .filter(dbHandler.imageEventImageId == imageIdValue)
-                
-                for row in try db.prepare(eventQuery) {
-                    if let name = row[dbHandler.eventName] {
-                        events.append(name)
-                    }
-                }
-                
                 
                 for row in try db.prepare(eventQuery) {
                     if let name = row[dbHandler.eventName] {
@@ -521,7 +557,8 @@ class ApiHandler{
                     "hash": hash,
 //                    "image_data": imageBase64,
                     "events": events,
-                    "persons": persons
+                    "persons": persons,
+                    "links": links
                 ]
                 
                 payload.append(imageDict)

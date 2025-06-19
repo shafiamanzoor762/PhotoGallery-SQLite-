@@ -21,9 +21,8 @@ struct EditPersonCardView: View {
                     Text("Name")
                         .font(.caption)
                     
-                    TextField("Enter name", text: $person.name
-                              
-                    ).frame(maxWidth: 100) // Set width and height
+                    TextField("Enter name", text: $person.name)
+                        .frame(maxWidth: 100) // Set width and height
                         .frame(height: 20).font(.caption)
                         .background(Color.clear)
 //                        .border(.gray, width: 1)
@@ -57,6 +56,13 @@ struct EditPersonCardView: View {
 //                    }
                     
                     
+                }
+                HStack{
+                    Text("DoB")
+                        .font(.caption)
+                    
+                    DatePicker("", selection: $person.dob, displayedComponents: .date)
+                        .labelsHidden()
                 }
             }
             .padding(2)
