@@ -20,7 +20,7 @@ struct PicturesView: View {
             GridItem(.flexible()),
             GridItem(.flexible())
         ]
-//    @State private var selectedIndex: Int? = nil
+    @State var person: Personn? = nil
     
     @State var images: [GalleryImage]
     
@@ -31,11 +31,23 @@ struct PicturesView: View {
     
     var body: some View {
             ScrollView{
+                if (person != nil) {
+                    VStack(alignment:.center) {
+                        PersonCircleImageView(imagePath: person!.path, size: 60)
+                        if person?.name.lowercased() == "unknown" {
+                            
+                            Image(systemName: "questionmark.circle.fill")
+                                .font(.system(size: 15))
+                                .foregroundStyle(.blue)
+                                .background(Color.white)
+                                .clipShape(Circle())
+                                .offset(x: 20, y: -12)
+                        }
+                        Text(person!.name).bold().foregroundStyle(.darkPurple)
+                    }
+                }
+                
                 VStack(alignment: .leading, spacing: 20) {
-                    
-//                    Text(screenName)
-//                        .font(.largeTitle)
-//                        .fontWeight(.bold).padding()
                     
                     LazyVGrid(columns: columns, spacing: 20) {
                         ForEach(images) { img in

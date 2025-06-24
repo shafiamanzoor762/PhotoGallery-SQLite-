@@ -1,78 +1,11 @@
-//
-//
-//
-//import SwiftUI
-//
-//struct LocationView: View {
-//    @State private var selectedIndex: Int? = nil
-//    @EnvironmentObject var navManager: NavManager  // Access nav state
-//    @State private var image = ImgesData.imagesDetail
-//
-//    private func getSelectedImages() -> [ImageeDetail] {
-//        var images: [ImageeDetail] = []
-//        if image.indices.contains(5) {
-//            images.append(image[5])
-//        }
-//        if image.indices.contains(6) {
-//            images.append(image[6])
-//        }
-//        return images
-//    }
-//
-//    var body: some View {
-//        let selectedImages = getSelectedImages()  // Compute outside the loop to improve performance
-//        
-//        return NavigationStack {
-//            ScrollView {
-//                LazyVGrid(columns: [
-//                    GridItem(.flexible()),
-//                    GridItem(.flexible()),
-//                    GridItem(.flexible())
-//                ], spacing: 20) {
-//                    ForEach(Array(image.enumerated()), id: \.element.id) { index, img in
-//                        
-//                        NavigationLink(
-//                            tag: index,
-//                            selection: $selectedIndex
-//                        ) {
-//                            PicturesView(screenName: img.location.Name, images: selectedImages)
-//                        } label: {
-//                            if img.persons.count>0{
-//                                CardSquare(
-//                                    title: img.location.Name,
-//                                    content: "\(index + 1)",
-//                                    imageURL: img.path
-//                                )
-//                                
-//                                .padding(.top, -10)
-//                                .contentShape(Rectangle())
-//                                .onTapGesture {
-//                                    print("Card \(index + 1) tapped")
-//                                    selectedIndex = index
-//                                }
-//                            }
-//                        }
-//                        .buttonStyle(PlainButtonStyle())
-//                    }
-//                }
-//                .padding()
-//            }
-//        }
-//    }
-//}
-
-
 
 import SwiftUI
 
 struct LocationView: View {
-    @StateObject private var viewModel = LocationModelView()
+    @StateObject var viewModel = LocationViewModel()
     @State private var selectedEventKey: String?
     @EnvironmentObject var navManager: NavManager
     
-//    init(dbHandler: DBHandler) {
-//        _viewModel = StateObject(wrappedValue: LocationModelView(dbHandler: dbHandler))
-//    }
     
     var body: some View {
         NavigationStack {
@@ -87,13 +20,13 @@ struct LocationView: View {
                 }
             }
 //            .navigationTitle("Events")
-//            .toolbar {
-//                ToolbarItem(placement: .navigationBarTrailing) {
-//                    Button(action: viewModel.refresh) {
-//                        Image(systemName: "arrow.clockwise")
-//                    }
-//                }
-//            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: viewModel.refresh) {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+            }
         }
     }
     

@@ -20,11 +20,31 @@ struct PersonView: View {
 
     var body: some View {
         ZStack {
-            mainContentView
-            popupView
+            
+            Group {
+                if viewModel.isLoading {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                } else if viewModel.error != nil {
+                    errorView
+                } else {
+                    mainContentView
+                    popupView
+                }
+            }
+//            mainContentView
+//            popupView
         }
         .onAppear {
             viewModel.fetchData()
+            print("data Fetched", viewModel.personGroups)
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: viewModel.refresh) {
+                    Image(systemName: "arrow.clockwise")
+                }
+            }
         }
     }
 
@@ -50,6 +70,7 @@ struct PersonView: View {
             ) {
                 PicturesView(
                     screenName: group.person.name,
+                    person: group.person,
                     images: group.images
                 )
             } label: {
@@ -174,6 +195,26 @@ struct PersonView: View {
             .background(Color.white)
             .cornerRadius(20)
             .shadow(radius: 10)
+            .padding()
+        }
+    }
+    
+    private var errorView: some View {
+        VStack {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.largeTitle)
+                .foregroundColor(.red)
+            Text("Error loading people")
+                .font(.title2)
+            Text(viewModel.error?.localizedDescription ?? "Unknown error")
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .padding()
+            
+            Button("Retry") {
+                viewModel.fetchData()
+            }
+            .buttonStyle(.borderedProminent)
             .padding()
         }
     }

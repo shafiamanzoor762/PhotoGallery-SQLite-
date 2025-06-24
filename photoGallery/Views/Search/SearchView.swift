@@ -14,8 +14,7 @@ struct SearchView: View {
     @State private var nameInput = ""
     @State private var ageInput = ""
     @State private var selectedNames: [String] = []
-    @State private var selectedAges: [String] = []
-//    @Binding private var selectedGender: String
+    //@State private var selectedAges: [String] = []
     @State private var selectedEvents: [String] = []
     @State private var selectedDates: [Date] = []
     @State private var captureDate = Date()
@@ -24,12 +23,15 @@ struct SearchView: View {
     @State private var selectedLocationNames: [String] = []
     @State private var navigateToPicturesView = false
     
+    @State private var showSuggestions = false
+    
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 33.6995, longitude: 73.0363),
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
     )
     
     @State private var selectedLocations: [MapLocation] = []
+
     
     // MARK: - Environment Properties
     @Environment(\.dismiss) var dismiss
@@ -37,9 +39,13 @@ struct SearchView: View {
     
     // MARK: - Main View
     var body: some View {
+
+        
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 nameSection
+                    .padding()
+                ageSection
                 genderSection
                 eventSection
                 dateSection
@@ -62,6 +68,12 @@ struct SearchView: View {
                 PicturesView(screenName: "Search Results", images: results)
             }
         }
+        
+//        .sheet(isPresented: $navigateToPicturesView) {
+//            if let results = viewModel.searchResults {
+//                FilteredResultsView(initialResults: results)
+//            }
+//        }
     }
     
     // MARK: - View Components
@@ -73,6 +85,27 @@ struct SearchView: View {
             HStack {
                 TextField("Name", text: $nameInput)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .onChange(of: nameInput) { newValue in
+                                        if newValue.count >= 2 {
+                                            viewModel.fetchNameSuggestions(searchTerm: newValue)
+                                            showSuggestions = true
+                                        } else {
+                                            showSuggestions = false
+                                            viewModel.nameSuggestions = []
+                                        }
+                                    }
+                                
+                                if showSuggestions && !viewModel.nameSuggestions.isEmpty {
+                                    List(viewModel.nameSuggestions, id: \.self) { suggestion in
+                                        Text(suggestion)
+                                            .onTapGesture {
+                                                nameInput = suggestion
+                                                showSuggestions = false
+                                            }
+                                    }
+                                    .frame(height: min(CGFloat(viewModel.nameSuggestions.count) * 44, 200))
+                                    .listStyle(PlainListStyle())
+                                }
                 addButton(action: addName)
             }
             selectedItemsView(items: selectedNames, removeAction: removeName)
@@ -83,11 +116,11 @@ struct SearchView: View {
         VStack(alignment: .leading) {
             SectionHeader("Age")
             HStack {
-                TextField("Age", text: $nameInput)
+                TextField("Age", text: $ageInput)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
-                addButton(action: addAge)
+//                addButton(action: addAge)
             }
-            selectedItemsView(items: selectedAges, removeAction: removeAge)
+//            selectedItemsView(items: selectedAges, removeAction: removeAge)
         }
     }
     
@@ -120,6 +153,8 @@ struct SearchView: View {
                 RadioButton(selectedText: $viewModel.selectedGender.genderBinding(), text: "Female")
                 
                 RadioButton(selectedText: $viewModel.selectedGender, text: "Both")
+                //RadioButton(selectedText: $viewModel.selectedGender, text: "Other")
+                //RadioButton(selectedText: $viewModel.selectedGender, text: "All")
             }
         }
     }
@@ -333,12 +368,26 @@ struct SearchView: View {
     }
     
     private func performSearch() {
-        let genders = viewModel.selectedGender == "Both" ? [] : [viewModel.selectedGender]
+        
+        var genders = [viewModel.selectedGender]
+        
+        if viewModel.selectedGender == "Both" {
+            genders = ["M","F"]
+        }
+        else if viewModel.selectedGender == "All" {
+            genders = ["M","F","U"]
+        }
+        else if viewModel.selectedGender == "Other" {
+            genders = ["U"]
+        }
+
+//        let genders = viewModel.selectedGender == "All" ? ["M,F,U"] : [viewModel.selectedGender]
 
         Task{
-//            print(genders)
+            print(genders)
             await viewModel.performSearch(
                 personNames: selectedNames,
+                age: Int(ageInput) ?? 0,
                 genders: genders,
                 eventNames: selectedEvents,
                 dates: selectedDates,
@@ -349,16 +398,6 @@ struct SearchView: View {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
 
 
 // MARK: - Identifiable Struct for Locations

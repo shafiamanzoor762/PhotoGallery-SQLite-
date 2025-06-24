@@ -38,7 +38,7 @@ struct DetailsPersonCardView: View {
                     Text("DoB")
                         .font(.caption)
                     
-                    Text(person.dob.toDatabaseString())
+                    Text(person.dob?.toDatabaseString() ?? "")
                         .font(.caption)
                         .foregroundColor(Defs.seeGreenColor)
                     
@@ -47,7 +47,7 @@ struct DetailsPersonCardView: View {
                     Text("Age")
                         .font(.caption)
                     
-                    Text(String(person.age))
+                    Text(String(person.age ?? 0))
                         .font(.caption)
                         .foregroundColor(Defs.seeGreenColor)
                     

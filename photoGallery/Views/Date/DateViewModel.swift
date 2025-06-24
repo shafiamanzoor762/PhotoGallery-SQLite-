@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import Combine
 
-class DateModelView: ObservableObject {
+class DateViewModel: ObservableObject {
     @Published var groupedImages: [String: [GalleryImage]] = [:]
     @Published var isLoading = false
     @Published var error: Error?
@@ -46,24 +46,6 @@ class DateModelView: ObservableObject {
         return groupedImages[key]?.first?.fullPath
     }
     
-    // Helper to get event name for a group
-//    func eventDate(for key: String) -> Date {
-//        return groupedImages[key]?.first?.event_date ?? Date.distantFuture
-//    }
-//    
-//    func eventName(for key: String) -> String {
-//        return groupedImages[key]?.first?.events.first?.Name ?? "Unknown Event"
-//    }
-//
-//    func formattedEventDate(for key: String) -> String {
-//        guard let date = groupedImages[key]?.first?.event_date else {
-//            return "Unknown Date"
-//        }
-//        let formatter = DateFormatter()
-//        formatter.dateStyle = .medium
-//        formatter.timeStyle = .none
-//        return formatter.string(from: date)
-//    }
     
     func refresh() {
         loadGroupedImages()

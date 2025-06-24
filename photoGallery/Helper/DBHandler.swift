@@ -59,8 +59,8 @@ class DBHandler: ObservableObject{
     let linkPerson1Id = Expression<Int>("person1_id")
     let linkPerson2Id = Expression<Int>("person2_id")
 
+    
     //MARK: - HISTORY TABLES
-    // MARK: -
     let locationHistoryTable = Table("location_history")
     let locationHisId = Expression<Int>("sr_no")
     let locationHisOriginalId = Expression<Int>("id")
@@ -320,69 +320,157 @@ class DBHandler: ObservableObject{
             }
         }
         
-        func createTriggers() {
+//        func createTriggers() {
+//            do {
+//                // Location Trigger
+//                try db?.run("""
+//                    CREATE TRIGGER IF NOT EXISTS trg_location_history
+//                    AFTER UPDATE ON location
+//                    BEGIN
+//                        INSERT INTO location_history (id, name, latitude, longitude, version_no, is_active, changed_at)
+//                        SELECT 
+//                            old.id,
+//                            old.name,
+//                            old.latitude,
+//                            old.longitude,
+//                            IFNULL((SELECT MAX(version_no) FROM location_history WHERE id = old.id), 0) + 1,
+//                            0,
+//                            datetime('now')
+//                        FROM location old
+//                        WHERE old.id = NEW.id;
+//                    END;
+//                """)
+//                
+//                // Person Trigger
+//                try db?.run("""
+//                    CREATE TRIGGER IF NOT EXISTS trg_person_history
+//                    AFTER UPDATE ON person
+//                    BEGIN
+//                        INSERT INTO person_history (id, name, path, gender, version_no, is_active, changed_at)
+//                        SELECT 
+//                            old.id,
+//                            old.name,
+//                            old.path,
+//                            old.gender,
+//                            IFNULL((SELECT MAX(version_no) FROM person_history WHERE id = old.id), 0) + 1,
+//                            0,
+//                            datetime('now')
+//                        FROM person old
+//                        WHERE old.id = NEW.id;
+//                    END;
+//                """)
+//                
+//                // Event Trigger
+//                try db?.run("""
+//                    CREATE TRIGGER IF NOT EXISTS trg_event_history
+//                    AFTER UPDATE ON event
+//                    BEGIN
+//                        INSERT INTO event_history (id, name, version_no, is_active, changed_at)
+//                        SELECT 
+//                            old.id,
+//                            old.name,
+//                            IFNULL((SELECT MAX(version_no) FROM event_history WHERE id = old.id), 0) + 1,
+//                            0,
+//                            datetime('now')
+//                        FROM event old
+//                        WHERE old.id = NEW.id;
+//                    END;
+//                """)
+//                
+//                // Image Trigger
+//                try db?.run("""
+//                    CREATE TRIGGER IF NOT EXISTS trg_image_history
+//                    AFTER UPDATE ON image
+//                    BEGIN
+//                        INSERT INTO image_history (id, path, is_sync, capture_date, event_date, last_modified, location_id, is_deleted, hash, version_no, is_active, changed_at)
+//                        SELECT 
+//                            old.id,
+//                            old.path,
+//                            old.is_sync,
+//                            old.capture_date,
+//                            old.event_date,
+//                            old.last_modified,
+//                            old.location_id,
+//                            old.is_deleted,
+//                            old.hash,
+//                            IFNULL((SELECT MAX(version_no) FROM image_history WHERE id = old.id), 0) + 1,
+//                            0,
+//                            datetime('now')
+//                        FROM image old
+//                        WHERE old.id = NEW.id;
+//                    END;
+//                """)
+//                
+//                // Image-Person Trigger
+//                try db?.run("""
+//                    CREATE TRIGGER IF NOT EXISTS trg_image_person_history
+//                    AFTER UPDATE ON image_person
+//                    BEGIN
+//                        INSERT INTO image_person_history (image_id, person_id, version_no, is_active, changed_at)
+//                        SELECT 
+//                            old.image_id,
+//                            old.person_id,
+//                            IFNULL((SELECT MAX(version_no) FROM image_person_history WHERE image_id = old.image_id AND person_id = old.person_id), 0) + 1,
+//                            0,
+//                            datetime('now')
+//                        FROM image_person old
+//                        WHERE old.image_id = NEW.image_id AND old.person_id = NEW.person_id;
+//                    END;
+//                """)
+//                
+//                // Image-Event Trigger
+//                try db?.run("""
+//                    CREATE TRIGGER IF NOT EXISTS trg_image_event_history
+//                    AFTER UPDATE ON image_event
+//                    BEGIN
+//                        INSERT INTO image_event_history (image_id, event_id, version_no, is_active, changed_at)
+//                        SELECT 
+//                            old.image_id,
+//                            old.event_id,
+//                            IFNULL((SELECT MAX(version_no) FROM image_event_history WHERE image_id = old.image_id AND event_id = old.event_id), 0) + 1,
+//                            0,
+//                            datetime('now')
+//                        FROM image_event old
+//                        WHERE old.image_id = NEW.image_id AND old.event_id = NEW.event_id;
+//                    END;
+//                """)
+//                
+//                // Link Trigger
+//                try db?.run("""
+//                    CREATE TRIGGER IF NOT EXISTS trg_link_history
+//                    AFTER UPDATE ON link
+//                    BEGIN
+//                        INSERT INTO link_history (person1_id, person2_id, version_no, is_active, changed_at)
+//                        SELECT 
+//                            old.person1_id,
+//                            old.person2_id,
+//                            IFNULL((SELECT MAX(version_no) FROM link_history WHERE person1_id = old.person1_id AND person2_id = old.person2_id), 0) + 1,
+//                            0,
+//                            datetime('now')
+//                        FROM link old
+//                        WHERE old.person1_id = NEW.person1_id AND old.person2_id = NEW.person2_id;
+//                    END;
+//                """)
+//                
+//                print("All triggers created successfully!")
+//            } catch {
+//                print("Error creating triggers: \(error)")
+//            }
+//        }
+    
+    
+    func createTriggers() {
             do {
-                // Location Trigger
+                // 1. Image History Trigger
                 try db?.run("""
-                    CREATE TRIGGER IF NOT EXISTS trg_location_history
-                    AFTER UPDATE ON location
-                    BEGIN
-                        INSERT INTO location_history (id, name, latitude, longitude, version_no, is_active, changed_at)
-                        SELECT 
-                            old.id,
-                            old.name,
-                            old.latitude,
-                            old.longitude,
-                            IFNULL((SELECT MAX(version_no) FROM location_history WHERE id = old.id), 0) + 1,
-                            0,
-                            datetime('now')
-                        FROM location old
-                        WHERE old.id = NEW.id;
-                    END;
-                """)
-                
-                // Person Trigger
-                try db?.run("""
-                    CREATE TRIGGER IF NOT EXISTS trg_person_history
-                    AFTER UPDATE ON person
-                    BEGIN
-                        INSERT INTO person_history (id, name, path, gender, version_no, is_active, changed_at)
-                        SELECT 
-                            old.id,
-                            old.name,
-                            old.path,
-                            old.gender,
-                            IFNULL((SELECT MAX(version_no) FROM person_history WHERE id = old.id), 0) + 1,
-                            0,
-                            datetime('now')
-                        FROM person old
-                        WHERE old.id = NEW.id;
-                    END;
-                """)
-                
-                // Event Trigger
-                try db?.run("""
-                    CREATE TRIGGER IF NOT EXISTS trg_event_history
-                    AFTER UPDATE ON event
-                    BEGIN
-                        INSERT INTO event_history (id, name, version_no, is_active, changed_at)
-                        SELECT 
-                            old.id,
-                            old.name,
-                            IFNULL((SELECT MAX(version_no) FROM event_history WHERE id = old.id), 0) + 1,
-                            0,
-                            datetime('now')
-                        FROM event old
-                        WHERE old.id = NEW.id;
-                    END;
-                """)
-                
-                // Image Trigger
-                try db?.run("""
-                    CREATE TRIGGER IF NOT EXISTS trg_image_history
+                    CREATE TRIGGER IF NOT EXISTS trg_UpdateImageHistory
                     AFTER UPDATE ON image
                     BEGIN
-                        INSERT INTO image_history (id, path, is_sync, capture_date, event_date, last_modified, location_id, is_deleted, hash, version_no, is_active, changed_at)
+                        INSERT INTO image_history (
+                            id, path, is_sync, capture_date, event_date, 
+                            last_modified, location_id, version_no, 
+                            is_deleted, hash, is_active, changed_at
+                        )
                         SELECT 
                             old.id,
                             old.path,
@@ -391,9 +479,9 @@ class DBHandler: ObservableObject{
                             old.event_date,
                             old.last_modified,
                             old.location_id,
+                            IFNULL((SELECT MAX(version_no) FROM image_history WHERE id = old.id), 0) + 1,
                             old.is_deleted,
                             old.hash,
-                            IFNULL((SELECT MAX(version_no) FROM image_history WHERE id = old.id), 0) + 1,
                             0,
                             datetime('now')
                         FROM image old
@@ -401,16 +489,63 @@ class DBHandler: ObservableObject{
                     END;
                 """)
                 
-                // Image-Person Trigger
+                // 2. Person History Trigger
                 try db?.run("""
-                    CREATE TRIGGER IF NOT EXISTS trg_image_person_history
+                    CREATE TRIGGER IF NOT EXISTS trg_UpdatePersonHistory
+                    AFTER UPDATE ON person
+                    BEGIN
+                        INSERT INTO person_history (
+                            id, name, path, gender, version_no, 
+                            is_active, changed_at, dob, age
+                        )
+                        SELECT 
+                            old.id,
+                            old.name,
+                            old.path,
+                            old.gender,
+                            IFNULL((SELECT MAX(version_no) FROM person_history WHERE id = old.id), 0) + 1,
+                            0,
+                            datetime('now'),
+                            old.dob,
+                            old.age
+                        FROM person old
+                        WHERE old.id = NEW.id;
+                    END;
+                """)
+                
+                // 3. Image Event History Trigger (on DELETE)
+                try db?.run("""
+                    CREATE TRIGGER IF NOT EXISTS trg_UpdateImageEventHistory
+                    AFTER DELETE ON image_event
+                    BEGIN
+                        INSERT INTO image_event_history (
+                            image_id, event_id, version_no, is_active, changed_at
+                        )
+                        SELECT 
+                            old.image_id,
+                            old.event_id,
+                            IFNULL((SELECT MAX(version_no) FROM image_event_history 
+                                   WHERE image_id = old.image_id AND event_id = old.event_id), 0) + 1,
+                            0,
+                            datetime('now')
+                        FROM image_event old
+                        WHERE old.image_id = OLD.image_id AND old.event_id = OLD.event_id;
+                    END;
+                """)
+                
+                // 4. Image Person History Trigger
+                try db?.run("""
+                    CREATE TRIGGER IF NOT EXISTS trg_UpdateImagePersonHistory
                     AFTER UPDATE ON image_person
                     BEGIN
-                        INSERT INTO image_person_history (image_id, person_id, version_no, is_active, changed_at)
+                        INSERT INTO image_person_history (
+                            image_id, person_id, version_no, is_active, changed_at
+                        )
                         SELECT 
                             old.image_id,
                             old.person_id,
-                            IFNULL((SELECT MAX(version_no) FROM image_person_history WHERE image_id = old.image_id AND person_id = old.person_id), 0) + 1,
+                            IFNULL((SELECT MAX(version_no) FROM image_person_history 
+                                   WHERE image_id = old.image_id AND person_id = old.person_id), 0) + 1,
                             0,
                             datetime('now')
                         FROM image_person old
@@ -418,33 +553,19 @@ class DBHandler: ObservableObject{
                     END;
                 """)
                 
-                // Image-Event Trigger
+                // 5. Link History Trigger
                 try db?.run("""
-                    CREATE TRIGGER IF NOT EXISTS trg_image_event_history
-                    AFTER UPDATE ON image_event
-                    BEGIN
-                        INSERT INTO image_event_history (image_id, event_id, version_no, is_active, changed_at)
-                        SELECT 
-                            old.image_id,
-                            old.event_id,
-                            IFNULL((SELECT MAX(version_no) FROM image_event_history WHERE image_id = old.image_id AND event_id = old.event_id), 0) + 1,
-                            0,
-                            datetime('now')
-                        FROM image_event old
-                        WHERE old.image_id = NEW.image_id AND old.event_id = NEW.event_id;
-                    END;
-                """)
-                
-                // Link Trigger
-                try db?.run("""
-                    CREATE TRIGGER IF NOT EXISTS trg_link_history
+                    CREATE TRIGGER IF NOT EXISTS trg_UpdateLinkHistory
                     AFTER UPDATE ON link
                     BEGIN
-                        INSERT INTO link_history (person1_id, person2_id, version_no, is_active, changed_at)
+                        INSERT INTO link_history (
+                            person1_id, person2_id, version_no, is_active, changed_at
+                        )
                         SELECT 
                             old.person1_id,
                             old.person2_id,
-                            IFNULL((SELECT MAX(version_no) FROM link_history WHERE person1_id = old.person1_id AND person2_id = old.person2_id), 0) + 1,
+                            IFNULL((SELECT MAX(version_no) FROM link_history 
+                                   WHERE person1_id = old.person1_id AND person2_id = old.person2_id), 0) + 1,
                             0,
                             datetime('now')
                         FROM link old
@@ -639,7 +760,9 @@ class DBHandler: ObservableObject{
                     "id": row[personId],
                     "name": row[personName] ?? "",
                     "path": row[personPath] ?? "",
-                    "gender": row[personGender] ?? ""
+                    "gender": row[personGender] ?? "",
+                    "dob": row[personDob] ?? Date().toDatabaseString(),
+                    "age": row[personAge] ?? 0
                 ]
             } ?? []
             

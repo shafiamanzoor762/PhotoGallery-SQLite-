@@ -19,6 +19,7 @@ class SearchHandler {
     
     func searchImages(
         personNames: [String] = [],
+        age: Int,
         genders: [String] = [],
         eventNames: [String] = [],
         eventDates: [Date] = [],
@@ -42,15 +43,20 @@ class SearchHandler {
             if !personNames.isEmpty {
                 personQuery = dbHandler.personTable.filter(personNames.contains(dbHandler.personName))
             }
-                print(genders)
-                
-                if !genders.isEmpty {
-                    personQuery = personQuery.filter(genders.contains(dbHandler.personGender))
+            
+            if (!genders.isEmpty) && (genders.first != "") {
+                    personQuery = dbHandler.personTable.filter(genders.contains(dbHandler.personGender))
                 }
+            
+            if (age != 0) {
+                personQuery = dbHandler.personTable.filter(dbHandler.personAge == age)
+            }
                 
                 let persons = try db.prepare(personQuery)
                 let personIds = persons.map { $0[dbHandler.personId] }
-                
+
+                print("Person IDs:", personIds)
+            
                 if !personIds.isEmpty {
                     let imagePersonQuery = dbHandler.imagePersonTable
                         .filter(personIds.contains(dbHandler.imagePersonPersonId))
@@ -139,10 +145,159 @@ class SearchHandler {
             return nil
         }
     }
+    
+    //MARK: - Search Images With All Constraints
+    func searchImagesWithAllConstraints(
+        personNames: [String] = [],
+        age: Int = 0,
+        genders: [String] = [],
+        eventNames: [String] = [],
+        eventDates: [Date] = [],
+        location: Locationn? = nil,
+        locationNames: [String] = [],
+        dateSearchType: DateSearchType = .day
+    ) -> [GalleryImage]? {
+        do {
+            guard let db = dbHandler.db else {
+                print("Database not connected")
+                return nil
+            }
+
+            var finalImageIds: Set<Int>?
+
+            // MARK: - Person Filter
+            var personQuery = dbHandler.personTable
+
+            if !personNames.isEmpty {
+                personQuery = personQuery.filter(personNames.contains(dbHandler.personName))
+            }
+
+            if !genders.isEmpty {
+                personQuery = personQuery.filter(genders.contains(dbHandler.personGender))
+            }
+
+            if age != 0 {
+                personQuery = personQuery.filter(dbHandler.personAge == age)
+            }
+
+            if !personNames.isEmpty || !genders.isEmpty || age != 0 {
+                let personIds = try db.prepare(personQuery).map { $0[dbHandler.personId] }
+
+                if personIds.isEmpty { return nil }
+
+                let imagePersonRows = try db.prepare(
+                    dbHandler.imagePersonTable.filter(personIds.contains(dbHandler.imagePersonPersonId))
+                )
+                finalImageIds = Set(imagePersonRows.map { $0[dbHandler.imagePersonImageId] })
+            }
+
+            // MARK: - Event Name Filter
+            if !eventNames.isEmpty {
+                let eventIds = try db.prepare(
+                    dbHandler.eventTable.filter(eventNames.contains(dbHandler.eventName))
+                ).map { $0[dbHandler.eventId] }
+
+                if eventIds.isEmpty { return nil }
+
+                let eventImageIds = try db.prepare(
+                    dbHandler.imageEventTable.filter(eventIds.contains(dbHandler.imageEventEventId))
+                ).map { $0[dbHandler.imageEventImageId] }
+
+                finalImageIds = finalImageIds?.intersection(eventImageIds) ?? Set(eventImageIds)
+            }
+
+            // MARK: - Event Date Filter
+            if !eventDates.isEmpty {
+                let dateStrings = eventDates.map { $0.toDatabaseString() }
+
+                let dateImageIds = try db.prepare(
+                    dbHandler.imageTable.filter(dateStrings.contains(dbHandler.eventDate))
+                ).map { $0[dbHandler.imageId] }
+
+                finalImageIds = finalImageIds?.intersection(dateImageIds) ?? Set(dateImageIds)
+            }
+
+            // MARK: - Location Filter
+            if let location = location {
+                if let locationRow = try db.pluck(
+                    dbHandler.locationTable
+                        .filter(dbHandler.latitude == location.latitude && dbHandler.longitude == location.longitude)
+                ) {
+                    let locationId = locationRow[dbHandler.locationId]
+
+                    let locationImageIds = try db.prepare(
+                        dbHandler.imageTable.filter(dbHandler.imageLocationId == locationId)
+                    ).map { $0[dbHandler.imageId] }
+
+                    finalImageIds = finalImageIds?.intersection(locationImageIds) ?? Set(locationImageIds)
+                } else {
+                    return nil
+                }
+            }
+
+            // MARK: - Location Name Filter
+            if !locationNames.isEmpty {
+                let locationIds = try db.prepare(
+                    dbHandler.locationTable.filter(locationNames.contains(dbHandler.locationName))
+                ).map { $0[dbHandler.locationId] }
+
+                if locationIds.isEmpty { return nil }
+
+                let locationNameImageIds = try db.prepare(
+                    dbHandler.imageTable.filter(locationIds.contains(dbHandler.imageLocationId))
+                ).map { $0[dbHandler.imageId] }
+
+                finalImageIds = finalImageIds?.intersection(locationNameImageIds) ?? Set(locationNameImageIds)
+            }
+
+            // MARK: - Final Fetch
+            guard let imageIds = finalImageIds, !imageIds.isEmpty else {
+                return nil
+            }
+
+            let filteredImages = try db.prepare(
+                dbHandler.imageTable
+                    .filter(imageIds.contains(dbHandler.imageId))
+                    .filter(dbHandler.isDeleted == false)
+            )
+
+            let result = filteredImages.map {
+                GalleryImage(id: $0[dbHandler.imageId], path: $0[dbHandler.imagePath])
+            }
+
+            return result.isEmpty ? nil : result
+
+        } catch {
+            print("❌ Error filtering images with all constraints: \(error)")
+            return nil
+        }
+    }
+
 
     enum DateSearchType {
         case day
         case month
         case year
+    }
+        
+    func getNameSuggestions(for searchTerm: String) -> [String] {
+        do {
+            guard let db = dbHandler.db else {
+                print("Database not connected")
+                return []
+            }
+            
+            let query = dbHandler.personTable
+                .select(distinct: dbHandler.personName)  // Add DISTINCT keyword
+                .filter(dbHandler.personName.like("\(searchTerm)%"))
+                .limit(10)
+            
+            return try db.prepare(query).compactMap { row in
+                try row.get(dbHandler.personName)
+            }
+        } catch {
+            print("Error fetching name suggestions: \(error)")
+            return []
+        }
     }
 }

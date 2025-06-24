@@ -377,7 +377,7 @@ struct EditImageView: View {
                     }
                 }
                 
-//                if viewModel.unlinkedPersonResponseModel.count > 0 {
+//                if viewModel.unlinkedPersonResponseModel.first?.unLinkedPersons.count ?? 0 > 0 {
                     viewModel.showLinkPopup = true
 //                }
                 
@@ -441,6 +441,11 @@ struct EditImageView: View {
 
 struct LinkPopupView: View {
     @ObservedObject var viewModel: EditImageViewModel
+    
+    @State private var showNameEditor = false
+    @State private var selectedPersonPath: String?
+    @State private var selectedPersonName = "Current Name"
+    @State private var selectedPersonId: Int?
 
     var body: some View {
         VStack(spacing: 16) {
@@ -469,38 +474,48 @@ struct LinkPopupView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     ForEach($viewModel.unlinkedPersonResponseModel, id: \.selectedPerson.id) { $unlinkedModel in
-                        VStack(spacing: 12) {
-                            PersonCircleImageView(imagePath: unlinkedModel.selectedPerson.path, size: 65)
-
-                            ForEach(unlinkedModel.unLinkedPersons, id: \.person.id) { group in
-                                GroupView(group: group, isSelected: viewModel.selectedGroupIDs.contains(group.person.id)) {
-                                    if viewModel.selectedGroupIDs.contains(group.person.id) {
-                                        viewModel.selectedGroupIDs.remove(group.person.id)
-                                    } else {
-                                        viewModel.selectedGroupIDs.insert(group.person.id)
+                        if unlinkedModel.unLinkedPersons.count>0{
+                            
+                            VStack(spacing: 12) {
+                                PersonCircleImageView(imagePath: unlinkedModel.selectedPerson.path, size: 65)
+                                
+                                ForEach(unlinkedModel.unLinkedPersons, id: \.person.id) { group in
+                                    GroupView(group: group, isSelected: viewModel.selectedGroupIDs.contains(group.person.id)) {
+                                        if viewModel.selectedGroupIDs.contains(group.person.id) {
+                                            viewModel.selectedGroupIDs.remove(group.person.id)
+                                        } else {
+                                            viewModel.selectedGroupIDs.insert(group.person.id)
+                                        }
                                     }
                                 }
                             }
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .shadow(radius: 4)
+                            
+                            
+                            // Action Buttons
+                            HStack {
+                                ButtonWhite(title: "Different", action: {
+                                    //viewModel.showLinkPopup = false
+                                    
+                                    print(viewModel.image)
+                                    selectedPersonId = unlinkedModel.selectedPerson.id
+                                    selectedPersonName = unlinkedModel.selectedPerson.name
+                                    selectedPersonPath = unlinkedModel.selectedPerson.path
+                                    
+                                    showNameEditor = true
+                                    viewModel.selectedGroupIDs.removeAll()
+                                    //print(viewModel.unlinkedPersonResponseModel)
+                                })
+                                ButtonOutline(title: "Same", action: {
+                                    viewModel.linkSelectedPersons(selectedPerson: unlinkedModel.selectedPerson)
+                                })
+                            }
+                            .padding(.bottom)
+                            
                         }
-                        .padding()
-                        .background(Color.white)
-                        .cornerRadius(12)
-                        .shadow(radius: 4)
-                    
-
-            // Action Buttons
-            HStack {
-                ButtonWhite(title: "Different", action: {
-                    //viewModel.showLinkPopup = false
-                    viewModel.selectedGroupIDs.removeAll()
-                    print(viewModel.unlinkedPersonResponseModel)
-                })
-                ButtonOutline(title: "Same", action: {
-                    viewModel.linkSelectedPersons(selectedPerson: unlinkedModel.selectedPerson)
-                })
-            }
-            .padding(.bottom)
-                        
                     }
                 }
                 .padding()
@@ -510,7 +525,42 @@ struct LinkPopupView: View {
         .background(Color(UIColor.systemGroupedBackground))
         .cornerRadius(20)
         .shadow(radius: 10)
-        .padding()
+        
+//        .overlay(
+//                    Group {
+//                        if showNameEditor {
+//                            for person in viewModel.image.persons {
+//                                if person.id == selectedPersonId {
+//                                    
+//                                    PersonNameEditorView(
+//                                        isPresented: $showNameEditor,
+//                                        person: $person
+//                                    )
+//                                    
+//                                }
+//                            }
+//                            
+//                        }
+//                    }
+//                )
+        
+        .overlay(
+            Group {
+                if showNameEditor, let selectedPerson = viewModel.image.persons.first(where: { $0.id == selectedPersonId }) {
+                    PersonNameEditorView(
+                        isPresented: $showNameEditor,
+                        person: Binding(
+                            get: { selectedPerson },
+                            set: { newValue in
+                                if let index = viewModel.image.persons.firstIndex(where: { $0.id == selectedPersonId }) {
+                                    viewModel.image.persons[index] = newValue
+                                }
+                            }
+                        )
+                    )
+                }
+            }
+        )
     }
 }
 
@@ -523,9 +573,9 @@ struct GroupView: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            PersonCircleImageView(imagePath: group.person.path, size: 55)
+            //PersonCircleImageView(imagePath: group.person.path, size: 55)
 
-            ForEach(group.persons.prefix(2), id: \.id) { p in
+            ForEach(group.persons.prefix(3), id: \.id) { p in
                 PersonCircleImageView(imagePath: p.path, size:55)
             }
 
@@ -540,6 +590,72 @@ struct GroupView: View {
         .onTapGesture {
             onTap()
         }
+    }
+}
+
+
+
+struct PersonNameEditorView: View {
+    @Binding var isPresented: Bool
+    @Binding var person: Personn
+    
+    
+    var body: some View {
+        ZStack {
+            // Semi-transparent background
+            Color.black.opacity(0.4)
+                .edgesIgnoringSafeArea(.all)
+                .onTapGesture {
+                    isPresented = false
+                }
+            
+            // Popup content
+            VStack(spacing: 20) {
+                // Person's face
+               
+                PersonCircleImageView(imagePath: person.path, size: 55)
+                // Name text field
+                Text("Change label").font(.title3)
+                TextField("Enter new name", text: $person.name)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding(.horizontal)
+                    .multilineTextAlignment(.center)
+                    .font(.title3)
+                
+                // Buttons
+                HStack(spacing: 20) {
+                    Button(action: {
+                        isPresented = false
+                    }) {
+                        Text("Cancel")
+                            .frame(width: 60,height: 10)
+                            .padding()
+                            .background(Defs.lightPink)
+                            .foregroundColor(.white)
+                            .cornerRadius(50)
+                    }
+                    
+                    Button(action: {
+                        print(person)
+                        isPresented = false
+                    }) {
+                        Text("OK")
+                            .frame(width: 60,height: 10)
+                            .padding()
+                            .background(Defs.seeGreenColor)
+                            .foregroundColor(.white)
+                            .cornerRadius(50)
+                    }
+                }
+            }
+            .padding()
+            .background(Color.white)
+            .cornerRadius(15)
+            .shadow(radius: 10)
+            .frame(width: 200)
+        }
+        .transition(.opacity)
+        .zIndex(1) // Ensure it appears above other content
     }
 }
 

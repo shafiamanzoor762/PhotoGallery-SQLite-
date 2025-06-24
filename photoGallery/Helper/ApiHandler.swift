@@ -18,11 +18,16 @@ enum NetworkError: Error {
     case noData
 }
 
+struct ImageeDetailData {
+    var images:[ImageeDetail]
+    var links: [[String: [String]]]
+}
+
 class ApiHandler{
 //    public static let baseUrl = "http://192.168.1.13:5000/"
 //        public static let baseUrl = "http://192.168.1.14:5000/"
     //Hp
-    public static let baseUrl = "http://192.168.1.7:5000/"
+    public static let baseUrl = "http://192.168.1.6:5000/"
     
     //VM
 //    public static let baseUrl = "http://192.168.64.4:5000/"
@@ -307,10 +312,11 @@ class ApiHandler{
                 completion(nil, NetworkError.noData)
                 return
             }
-            
+            print(data)
             do {
                 let ph = PersonHandler()
                 let personGroups = try ph.parsePersonGroups(from: data)
+                print(personGroups)
                 completion(personGroups, nil)
             } catch {
                 completion(nil, error)
@@ -454,8 +460,85 @@ class ApiHandler{
         return links
     }
 
+//    static func processLinks(from rawJson: [String: Any]) throws {
+//        print(rawJson)
+//        guard let links = rawJson["links"] as? [String: [String]] else {
+//            throw NSError(domain: "DataError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid links format"])
+//        }
+//        
+//        var ph = PersonHandler()
+//        
+//        for (path1, linkedPaths) in links {
+//            // Find first person by path (skip if not found)
+//            guard let person1 = try ph.findPerson(byPath: path1) else {
+//                print("⚠️ Person not found with path: \(path1)")
+//                continue
+//            }
+//            
+//            // Process all linked paths
+//            for path2 in linkedPaths {
+//                // Find second person by path (skip if not found)
+//                guard let person2 = try ph.findPerson(byPath: path2) else {
+//                    print("⚠️ Person not found with path: \(path2)")
+//                    continue
+//                }
+//                
+//                // Create link if it doesn't exist
+//                do {
+//                    let result = try ph.insertLink(person1Id: person1.id, person2Id: person2.id)
+//                    if let error = result["error"] as? String {
+//                        print("ℹ️ \(error) between \(person1.id) and \(person2.id)")
+//                    } else {
+//                        print("✅ Created link between \(person1.id) and \(person2.id)")
+//                    }
+//                } catch {
+//                    print("⛔ Failed to create link: \(error.localizedDescription)")
+//                }
+//            }
+//        }
+//    }
     
-    static func fetchUnsyncedImages(completion: @escaping (Swift.Result<[ImageeDetail], Error>) -> Void) {
+    static func processLinks(from linksArray: [[String: [String]]]) throws {
+        var ph = PersonHandler()
+        var processedLinks = 0
+        
+        for linkDict in linksArray {
+            for (path1, linkedPaths) in linkDict {
+                // Find first person by path
+                guard let person1 = try ph.findPerson(byPath: path1) else {
+                    print("⚠️ Person not found with path: \(path1)")
+                    continue
+                }
+                
+                // Process all linked paths
+                for path2 in linkedPaths {
+                    // Find second person by path
+                    guard let person2 = try ph.findPerson(byPath: path2) else {
+                        print("⚠️ Person not found with path: \(path2)")
+                        continue
+                    }
+                    
+                    // Create link
+                    do {
+                        let result = try ph.insertLink(person1Id: person1.id, person2Id: person2.id)
+                        if let error = result["error"] as? String {
+                            print("ℹ️ \(error) between \(person1.id) and \(person2.id)")
+                        } else {
+                            print("✅ Created link between \(person1.id) and \(person2.id)")
+                            processedLinks += 1
+                        }
+                    } catch {
+                        print("⛔ Failed to create link: \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
+        
+        print("Successfully processed \(processedLinks) links")
+    }
+    
+
+    static func fetchUnsyncedImages(completion: @escaping (Swift.Result<ImageeDetailData, Error>) -> Void) {
 
         do {
             let dbHandler = DBHandler()
@@ -590,34 +673,51 @@ class ApiHandler{
                 
                 
                 do {
-                    // Decode into an array of dictionaries first
-                    guard let rawJson = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] else {
+
+                    // Fix null event_date and location
+                    
+                    guard let rawJson = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                          var syncImages = rawJson["images"] as? [[String: Any]] else {
                         throw NSError(domain: "Invalid JSON", code: 1)
                     }
-                    
-                    // Fix null event_date and location
-                    let fixedJson = rawJson.map { dict -> [String: Any] in
-                        var copy = dict
+                    //print(rawJson)
+                    //print(syncImages)
+                    //print("links------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",rawJson["links"])
+
+                    // Fix nulls in syncImages
+                    let fixedSyncImages = syncImages.map { imageDict -> [String: Any] in
+                        var image = imageDict
                         
-                        if copy["event_date"] is NSNull || copy["event_date"] == nil {
-                            copy["event_date"] = "1111-01-01"  // Provide default date
+                        //print(imageDict)
+
+                        if image["event_date"] == nil || image["event_date"] is NSNull {
+                            image["event_date"] = "1111-01-01"
                         }
-                        
-                        //print("\(copy["location"])555555---5555")
-                        if copy["location"] is NSNull || copy["location"] == nil {
-                            copy["location"] = [
+
+                        if image["location"] == nil || image["location"] is NSNull {
+                            image["location"] = [
                                 "id": 0,
                                 "name": "",
                                 "latitude": 0.0,
                                 "longitude": 0.0
                             ]
                         }
-                        print("\(copy["location"])555555---5555")
-                        return copy
+
+                        if var persons = image["persons"] as? [[String: Any]] {
+                            for i in 0..<persons.count {
+                                if persons[i]["dob"] == nil || persons[i]["dob"] is NSNull {
+                                    persons[i]["dob"] = "1111-01-01"
+                                }
+                            }
+                            image["persons"] = persons
+                        }
+
+                        return image
                     }
-                    
+
+
                     // Convert back to Data
-                    let fixedData = try JSONSerialization.data(withJSONObject: fixedJson, options: [])
+                    let fixedData = try JSONSerialization.data(withJSONObject: fixedSyncImages, options: [])
                     
                     // Now decode your model
                     let decoder = JSONDecoder()
@@ -640,10 +740,16 @@ class ApiHandler{
                     
                     
                     let images = try decoder.decode([ImageeDetail].self, from: fixedData)
-                    print("Decoded images: \(images)")
+                    //print("Decoded images: \(images)")
+                    guard let links = rawJson["links"] as? [[String: [String]]] else {
+                        throw NSError(domain: "DataError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid links format"])
+                    }
+
+                    let imagesData = ImageeDetailData(images: images, links: links)
+//                    let imagesData = ImageeDetailData(images: images, links: rawJson["links"] as! [[String: [String]]])
                     
                     DispatchQueue.main.async {
-                        completion(.success(images))
+                        completion(.success(imagesData))
                     }
                     
                 } catch {
@@ -663,15 +769,15 @@ class ApiHandler{
     
     
     static func syncUnsyncedImages(completion: @escaping (Swift.Result<String, Error>) -> Void) {
-        ApiHandler.fetchUnsyncedImages { result in
+        fetchUnsyncedImages { result in
             switch result {
-            case .success(let images):
-                print("Found \(images.count) unsynced images.")
+                case .success(let syncData):
+                    print("Found \(syncData.images.count) unsynced images.")
 
                 let group = DispatchGroup()
                 var lastError: Error?
 
-                for imageDetail in images {
+                for imageDetail in syncData.images {
                     let imagePath = imageDetail.path
                     let fullImageUrl = "\(ApiHandler.imageUrl)\(imagePath)"
                     group.enter()
@@ -697,13 +803,9 @@ class ApiHandler{
                                 throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not initialized"])
                             }
 
-//                            let hash = HelperFunctions.generateImageHashSimple(imagePath: fileURL.path) ?? ""
                             let hash = imageDetail.hash
                             let imageQuery = dbHandler.imageTable.filter(dbHandler.hash == hash)
                             
-//                            for per in  imageDetail.persons {
-//                                per.id = try PersonHandler().getOrInsertPersonId(person: per)
-//                            }
                             
                             var updatedPersons = imageDetail.persons
                             
@@ -712,7 +814,7 @@ class ApiHandler{
                                 per.id = try PersonHandler().getOrInsertPersonId(person: per)
                                 updatedPersons[i] = per
                             }
-                            print(updatedPersons)
+                            //print(updatedPersons)
                             
                             
                             var updatedEvents = imageDetail.events
@@ -737,7 +839,7 @@ class ApiHandler{
                                     return
                                 }
                                 
-                                print("\(newSqlDate)444444444----->\(sqliteDate)")
+                                //print("\(newSqlDate)444444444----->\(sqliteDate)")
 
                                 if newSqlDate > sqliteDate {
                                     print("📝 Updating image: \(filename)")
@@ -800,6 +902,14 @@ class ApiHandler{
                                     }
                                     group.leave()
                                 }
+                            }
+                            
+                            // Access links if needed
+                            do {
+                                print("-------------->>>>>>>>>>> Syncing......................")
+                                try processLinks(from: syncData.links)
+                            } catch {
+                                print("Failed to process links: \(error.localizedDescription)")
                             }
 
                         } catch {

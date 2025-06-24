@@ -17,19 +17,19 @@ struct DeleteImageView: View {
     var body: some View {
         VStack(alignment: .leading) {
             // Delete Metadata Button
-            Button(action: {
-                NotificationCenter.default.post(name: .refreshLabelView, object: nil)
-            }, label: {
-                HStack {
-                    Image(systemName: "photo.badge.exclamationmark")
-                        .font(.largeTitle)
-                        .foregroundStyle(.red)
-                    Text("Delete Metadata")
-                        .foregroundStyle(.white)
-                        .font(.title3)
-                }
-            })
-            .padding()
+//            Button(action: {
+//                NotificationCenter.default.post(name: .refreshLabelView, object: nil)
+//            }, label: {
+//                HStack {
+//                    Image(systemName: "photo.badge.exclamationmark")
+//                        .font(.largeTitle)
+//                        .foregroundStyle(.red)
+//                    Text("Delete Metadata")
+//                        .foregroundStyle(.white)
+//                        .font(.title3)
+//                }
+//            })
+//            .padding()
             
             // Delete Image Button - Triggers confirmation dialog
             Button(action: {

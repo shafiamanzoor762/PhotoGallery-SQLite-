@@ -57,13 +57,41 @@ struct EditPersonCardView: View {
                     
                     
                 }
-                HStack{
-                    Text("DoB")
-                        .font(.caption)
-                    
-                    DatePicker("", selection: $person.dob, displayedComponents: .date)
-                        .labelsHidden()
+                
+                Text("DoB")
+                    .font(.caption)
+//                
+//                HStack{
+//                    
+//                    DatePicker(
+//                        "Date of Birth",
+//                        selection: Binding(
+//                            get: { person.dob ?? Date() },
+//                            set: { person.dob = $0 }
+//                        ),
+//                        displayedComponents: .date
+//                    )
+//                    .frame(maxWidth: 100) // Set width and height
+//                    .frame(height: 20)
+//
+//                }
+                
+                HStack {
+                    DatePicker(
+                        "",
+                        selection: Binding(
+                            get: { person.dob ?? Date() },
+                            set: { person.dob = $0 }
+                        ),
+                        displayedComponents: .date
+                    )
+                    .labelsHidden()
+                    .datePickerStyle(.compact)
+                    .frame(width: 100, height: 20)
+                    .transformEffect(.init(scaleX: 0.6, y: 0.6)) // Scale down
+                    //.padding(.leading,5)
                 }
+                .padding(.leading,10)
             }
             .padding(2)
             .frame(width: 120)

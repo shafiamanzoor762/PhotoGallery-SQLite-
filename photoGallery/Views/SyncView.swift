@@ -17,7 +17,7 @@ struct SyncView: View {
     @State var alertMessage: String = ""
     var body: some View {
         VStack{
-            TextComponent(title: "Sync -> \(isRequired ? " Sync Required" : " 4 Items to Sync")")
+            TextComponent(title: "Sync -> \(isRequired ? " Sync Required" : " Click Button to Start Sync")")
             Image("sync").frame(width:300, height: 300)
             ButtonComponent(title: "Sync", action: {
                 print("Sync Clicked")

@@ -147,7 +147,8 @@ struct Cover: View {
                 currentView
 //                Spacer()
 //                capturedImageView
-                floatingButtons
+            //Add Image
+                //floatingButtons
 
         }
         .ignoresSafeArea(edges: .bottom)

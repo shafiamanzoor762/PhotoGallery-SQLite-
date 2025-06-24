@@ -50,7 +50,7 @@ class ImageHandler {
                 dbHandler.imagePath <- filename,
                 dbHandler.hash <- h,
                 dbHandler.isSync <- false,
-                dbHandler.captureDate <- HelperFunctions.currentDateString(),
+                dbHandler.captureDate <- Date().toDatabaseString(),
                 dbHandler.lastModified <- HelperFunctions.currentDateString(),
                 dbHandler.isDeleted <- false
             )
@@ -267,10 +267,10 @@ class ImageHandler {
                 }
 //                if eventDate == "1111-01-01" ?
                 // Update core image record
-                try db.run(imageQuery.update(
-                    dbHandler.eventDate <- eventDate == "1111-01-01" ? nil : eventDate,
-                    dbHandler.lastModified <- HelperFunctions.currentDateString()
-                ))
+//                try db.run(imageQuery.update(
+//                    dbHandler.eventDate <- eventDate == "1111-01-01" ? nil : eventDate,
+//                    dbHandler.lastModified <- HelperFunctions.currentDateString()
+//                ))
                 print("done with image")
                 // Handle events
                 if let eventNames = eventNames, !eventNames.isEmpty {
@@ -331,9 +331,23 @@ class ImageHandler {
                         )))
                     }
                     
-                    try db.run(imageQuery.update(dbHandler.imageLocationId <- locationId))
+//                    try db.run(imageQuery.update(dbHandler.imageLocationId <- locationId))
+                    try db.run(imageQuery.update(
+                        dbHandler.eventDate <- eventDate == "1111-01-01" ? nil : eventDate,
+                        dbHandler.lastModified <- HelperFunctions.currentDateString(),
+                        dbHandler.imageLocationId <- locationId
+                    ))
                 }
+                
                 print("done with location")
+                
+                var dateString = ""
+                if let row = try? db.pluck(imageQuery) {
+                    dateString = eventDate ?? row[dbHandler.captureDate] ?? Date().toDatabaseString() // this gives you the "capture_date"
+                    print("Capture Date: \(dateString)")
+                }
+                
+                
                 // Handle persons
                 if let persons = persons {
                     try db.run(dbHandler.imagePersonTable.filter(dbHandler.imagePersonImageId == imageId).delete())
@@ -343,9 +357,17 @@ class ImageHandler {
                         if person.id <= 0 { continue }
                         let personId = person.id
                         
+                        var age = 0
+                        if let dob = person.dob {
+                            age = PersonHandler().calculateAge(from: dob, to: Date.fromDatabaseString(dateString)!) ?? 0
+                        }
+                        print(age)
+                        
                         try db.run(dbHandler.personTable.filter(dbHandler.personId == personId).update(
                             dbHandler.personName <- person.name,
-                            dbHandler.personGender <- person.gender
+                            dbHandler.personGender <- person.gender,
+                            dbHandler.personDob <- person.dob?.toDatabaseString() == "1111-01-01" ? nil : person.dob?.toDatabaseString(),
+                            dbHandler.personAge <- age == 914 ? 0 : age
                         ))
                         
                         let query = dbHandler.personTable.filter(dbHandler.personId == personId).limit(1)
@@ -365,7 +387,12 @@ class ImageHandler {
                         
                     
                         
-                        try db.run(dbHandler.imagePersonTable.insert(
+//                        try db.run(dbHandler.imagePersonTable.insert(
+//                            dbHandler.imagePersonImageId <- imageId,
+//                            dbHandler.imagePersonPersonId <- personId
+//                        ))
+                        
+                        try db.run(dbHandler.imagePersonTable.insert(or: .ignore,
                             dbHandler.imagePersonImageId <- imageId,
                             dbHandler.imagePersonPersonId <- personId
                         ))
@@ -405,7 +432,7 @@ class ImageHandler {
                 guard let captureDateStr = imageRow[dbHandler.captureDate],
 //                      let eventDateStr = imageRow[dbHandler.eventDate],
                       let lastModifiedStr = imageRow[dbHandler.lastModified],
-                      let captureDate = Date.fromISOString(captureDateStr) ?? Date.fromDatabaseString(captureDateStr),
+                      let captureDate = Date.fromDatabaseString(captureDateStr),
                       let lastModified =  DateFormatter.sqlServerWithoutMillis.date(from: lastModifiedStr ) ?? Date.fromDatabaseString(lastModifiedStr) else {
                     print("Error parsing dates for image \(imageId)")
                     return nil
@@ -414,7 +441,7 @@ class ImageHandler {
                 // Handle event date (can be null)
                 let eventDate: Date
                 if let eventDateStr = imageRow[dbHandler.eventDate] {
-                    eventDate = Date.fromISOString(eventDateStr) ?? Date.fromDatabaseString(eventDateStr) ?? Date()
+                    eventDate = Date.fromDatabaseString(eventDateStr) ?? Date()
                 } else {
                     eventDate = Date()
                 }

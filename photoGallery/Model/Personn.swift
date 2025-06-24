@@ -11,6 +11,6 @@ struct Personn: Codable {
     var name: String
     var gender: String
     var path: String
-    var dob: Date
-    var age: Int
+    var dob: Date?
+    var age: Int?
 }

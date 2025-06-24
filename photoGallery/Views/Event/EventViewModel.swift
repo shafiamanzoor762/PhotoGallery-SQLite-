@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import Combine
 
-class EventModelView: ObservableObject {
+class EventViewModel: ObservableObject {
     @Published var groupedImages: [String: [GalleryImage]] = [:]
     @Published var isLoading = false
     @Published var error: Error?

@@ -101,12 +101,13 @@ class PersonHandler {
                   let personId = personDict["id"] as? Int,
                   let personName = personDict["name"] as? String,
                   let personPath = personDict["path"] as? String,
-                  let personDob = personDict["dob"] as? Date,
+                  let personDob = Date.fromDatabaseString(personDict["dob"] as! String == "" ? Date().toDatabaseString() : personDict["dob"] as! String),
                   let personAge = personDict["age"] as? Int,
                   let personGender = personDict["gender"] as? String,
                   let imagesArray = groupDict["Images"] as? [[String: Any]] else {
                 continue
             }
+            print(personDict["dob"],personDict["age"])
             
             let person = Personn(
                 id: personId,
@@ -115,7 +116,6 @@ class PersonHandler {
                 path: personPath,
                 dob: personDob,
                 age: personAge
-                
             )
             
             let images = imagesArray.compactMap { imageDict -> GalleryImage? in
@@ -126,13 +126,11 @@ class PersonHandler {
                 guard let imageRecord = try? db.pluck(query) else {
                     return nil
                 }
-                
                 return GalleryImage(
                     id: imageIdValue,
                     path: imageRecord[dbHandler.imagePath]
                 )
             }
-            
             result.append(PersonGroup(person: person, images: images))
         }
         
@@ -237,7 +235,7 @@ class PersonHandler {
         }
 
         // Create the filter query - match by name (you can add more filters like gender or path if needed)
-        let query = dbHandler.personTable.filter(dbHandler.personName == person.name)
+        let query = dbHandler.personTable.filter(dbHandler.personName == person.path)
 
         if let existing = try db.pluck(query) {
             // Person exists — return their ID
@@ -247,10 +245,40 @@ class PersonHandler {
             let newId = try db.run(dbHandler.personTable.insert(
                 dbHandler.personName <- person.name,
                 dbHandler.personGender <- person.gender,
-                dbHandler.personPath <- person.path
+                dbHandler.personPath <- person.path,
+                dbHandler.personDob <- person.dob?.toDatabaseString(),
+                dbHandler.personAge <- person.age
             ))
             return Int(newId)
         }
+    }
+    
+
+    public func calculateAge(from birthDate: Date, to currentDate: Date) -> Int? {
+
+        // Calculate the difference in years
+        let ageComponents = Calendar.current.dateComponents([.year], from: birthDate, to: currentDate)
+        return ageComponents.year
+    }
+
+    public func findPerson(byPath path: String) throws -> Personn? {
+        guard let db = dbHandler.db else {
+            throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not initialized"])
+        }
+        
+        let query = dbHandler.personTable.filter(dbHandler.personPath == path)
+        guard let person = try db.pluck(query) else {
+            return nil
+        }
+        
+        return Personn(
+            id: person[dbHandler.personId],
+            name: person[dbHandler.personName] ?? "Unknown",
+            gender: person[dbHandler.personGender] ?? "U",
+            path: person[dbHandler.personPath] ?? "",
+            dob: Date.fromDatabaseString(person[dbHandler.personDob] ?? Date().toDatabaseString()),
+            age: person[dbHandler.personAge]
+        )
     }
 
 }

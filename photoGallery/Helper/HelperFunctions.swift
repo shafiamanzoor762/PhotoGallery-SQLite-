@@ -24,7 +24,7 @@ class HelperFunctions{
         
         var request = URLRequest(url: serverURL)
         request.httpMethod = "HEAD"
-        request.timeoutInterval = 3
+        request.timeoutInterval = 30
         
         let task = URLSession.shared.dataTask(with: request) { _, response, error in
             print("Server check completed. Error: \(error?.localizedDescription ?? "none")")

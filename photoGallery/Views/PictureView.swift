@@ -14,6 +14,10 @@ struct PictureView: View {
     @State private var showDelete = false
     @State private var showDetails = false
     @State private var showInfo = false
+    @State private var showShare = false
+    @State private var shareWithMetadata = false
+    
+    @State private var shareItems: [Any] = []
     
     @State private var uiImage: UIImage?
     
@@ -39,6 +43,34 @@ struct PictureView: View {
                 Spacer()
                 
                 Menu {
+                    
+                    
+//                    Button(action: {
+//                        shareWithMetadata = false
+//                        if let imagee = uiImage {
+//                            shareItems = [imagee]
+//                            showShare = true
+//                        }
+//                    }) {
+//                        Label("Share Image Only", systemImage: "square.and.arrow.up.fill")
+//                    }
+//
+//                    Button(action: {
+//                        shareWithMetadata = true
+//                        
+//                        let metadata = generateMetadata(from: image)
+//                        
+//                        if let imagee = uiImage {
+//                            shareItems = [imagee, metadata]
+//                        }
+//                        showShare = true
+//                    }) {
+//                        Label("Share Image with Metadata", systemImage: "richtext.page.fill")
+//                    }
+
+                    
+                    Divider()
+                    
                     Button(action: {
                         showEdit = true
                     }) {
@@ -56,11 +88,11 @@ struct PictureView: View {
                     }) {
                         Label("Delete", systemImage: "trash")
                     }
-                    Button(action: {
-                        showInfo = true
-                    }) {
-                        Label("Info", systemImage: "info.circle")
-                    }
+//                    Button(action: {
+//                        showInfo = true
+//                    }) {
+//                        Label("Info", systemImage: "info.circle")
+//                    }
                     
                 }
                 label: {
@@ -198,11 +230,45 @@ struct PictureView: View {
                         .presentationDragIndicator(.visible)
         }
         
+        .sheet(isPresented: $showShare) {
+            ShareSheet(activityItems: shareItems)
+        }
+       
+        
     }
+    
     private func loadImage() {
         let fileURL = URL(fileURLWithPath: image.fullPath)
         uiImage = UIImage(contentsOfFile: fileURL.path)
     }
+    
+    func generateMetadata(from image: ImageeDetail) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+
+        let captureDate = formatter.string(from: image.capture_date)
+        let eventDate = formatter.string(from: image.event_date)
+        let locationName = image.location.name
+        let coordinates = "(\(image.location.latitude), \(image.location.longitude))"
+
+        let personDescriptions = image.persons.map { person -> String in
+            let gender = person.gender == "M" ? "♂" : person.gender == "F" ? "♀" : "⚧"
+            let age = person.age != nil ? "\(person.age!) yrs" : "Age N/A"
+            return "\(person.name) \(gender), \(age)"
+        }.joined(separator: ", ")
+
+        let eventNames = image.events.map { $0.name }.joined(separator: ", ")
+
+        return """
+        📸 Photo taken on \(captureDate)
+        🎉 Event: \(eventNames)
+        📍 Location: \(locationName) \(coordinates)
+        🧑‍🤝‍🧑 People in photo: \(personDescriptions)
+        🗓️ Event Date: \(eventDate)
+        """
+    }
+
 }
 
 
@@ -261,15 +327,14 @@ struct PersonImageCardView: View {
                 
                 // Show question mark only if name is "unknown"
                 if isUnknown {
-                    Circle()
-                        .fill(Color.blue)
-                        .frame(width: 24, height: 24)
-                        .overlay(
-                            Text("?")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                        )
-                        .offset(x: -4, y: -4)
+                    
+                    Image(systemName: "questionmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.blue)         // sets the icon color
+                        .background(Color.white)          // sets the background behind the icon
+                        .clipShape(Circle())             // optional: make background circular
+                        .offset(x: -0, y: -0)
+
                 }
             }
         }

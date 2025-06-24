@@ -65,13 +65,10 @@
 import SwiftUI
 
 struct EventView: View {
-    @StateObject private var viewModel = EventModelView()
+    @StateObject var viewModel = EventViewModel()
     @State private var selectedEventKey: String?
     @EnvironmentObject var navManager: NavManager
     
-//    init() {
-//        _viewModel = StateObject(wrappedValue: EventModelView())
-//    }
     
     var body: some View {
         NavigationStack {
@@ -103,33 +100,6 @@ struct EventView: View {
                 GridItem(.flexible()),
                 GridItem(.flexible())
             ], spacing: 20) {
-//                ForEach(Array(viewModel.groupedImages.keys.sorted() ?? []), id: \.self) { key in
-//                    if let firstImagePath = viewModel.firstImagePath(for: key) {
-//                        NavigationLink(
-//                            tag: key,
-//                            selection: $selectedEventKey
-//                        ) {
-//                            if let images = viewModel.groupedImages[key] {
-//                                PicturesView(
-//                                    screenName: viewModel.eventName(for: key),
-//                                    images: images
-//                                )
-//                            }
-//                        } label: {
-//                            CardSquare(
-//                                title: key,
-//                                count: "\(viewModel.groupedImages[key]?.count ?? 0)",
-//                                imageURL: firstImagePath
-//                            )
-//                            .padding(.top, -10)
-//                            .contentShape(Rectangle())
-//                            .onTapGesture {
-//                                selectedEventKey = key
-//                            }
-//                        }
-//                        .buttonStyle(PlainButtonStyle())
-//                    }
-//                }
                 
                 
                 ForEach(Array(viewModel.groupedImages.keys.sorted()), id: \.self) { key in
