@@ -522,16 +522,15 @@ class DBHandler: ObservableObject{
                             image_id, event_id, version_no, is_active, changed_at
                         )
                         SELECT 
-                            old.image_id,
-                            old.event_id,
+                            OLD.image_id,
+                            OLD.event_id,
                             IFNULL((SELECT MAX(version_no) FROM image_event_history 
-                                   WHERE image_id = old.image_id AND event_id = old.event_id), 0) + 1,
+                                    WHERE image_id = OLD.image_id AND event_id = OLD.event_id), 0) + 1,
                             0,
-                            datetime('now')
-                        FROM image_event old
-                        WHERE old.image_id = OLD.image_id AND old.event_id = OLD.event_id;
+                            datetime('now');
                     END;
                 """)
+
                 
                 // 4. Image Person History Trigger
                 try db?.run("""

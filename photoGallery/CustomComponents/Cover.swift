@@ -129,12 +129,16 @@ struct Cover: View {
                 Label("Sync", systemImage: "arrow.trianglehead.2.clockwise.rotate.90")
             }
             
-//            Button(action: bulkEditAction) {
-//                Label("Bulk Edit", systemImage: "rectangle.and.pencil.and.ellipsis")
-//            }
-            
             Button(action: undoChangesAction) {
                 Label("Undo Changes", systemImage: "arrow.uturn.backward")
+            }
+            
+            Button(action: redoChangesAction) {
+                Label("Redo Changes", systemImage: "arrow.uturn.forward")
+            }
+            
+            Button(action: trashAction) {
+                Label("Trash Images", systemImage: "trash.fill")
             }
         }
     }
@@ -249,6 +253,18 @@ struct Cover: View {
     
     private func undoChangesAction() {
         path.append("Undo Changes")
+        navBarState.isHidden = true
+        dismiss()
+    }
+    
+    private func redoChangesAction() {
+        path.append("Redo Changes")
+        navBarState.isHidden = true
+        dismiss()
+    }
+    
+    private func trashAction() {
+        path.append("Trash Images")
         navBarState.isHidden = true
         dismiss()
     }

@@ -62,6 +62,14 @@ struct Cover2: View {
                 if tabViewName == "Undo Changes" {
                     UndoChangesView()
                 }
+                
+                if tabViewName == "Redo Changes" {
+                    UndoChangesView()
+                }
+                
+                if tabViewName == "Trash Images" {
+                    TrashView()
+                }
             }
             //.padding(.top)
         }

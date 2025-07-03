@@ -21,17 +21,39 @@ class UndoHandler {
                 return []
             }
             
+//            let query = try db.prepare("""
+//                SELECT ih.id, ih.path, ih.version_no
+//                FROM image_history ih
+//                INNER JOIN (
+//                    SELECT id, MAX(version_no) as max_version
+//                    FROM image_history
+//                    WHERE is_active = 0 AND (is_deleted = 0 OR is_deleted IS NULL)
+//                    GROUP BY id
+//                ) subq ON ih.id = subq.id AND ih.version_no = subq.max_version
+//                WHERE ih.is_active = 0 AND (ih.is_deleted = 0 OR ih.is_deleted IS NULL)
+//                """)
+            
             let query = try db.prepare("""
-                SELECT ih.id, ih.path, ih.version_no
-                FROM image_history ih
-                INNER JOIN (
-                    SELECT id, MAX(version_no) as max_version
-                    FROM image_history
-                    WHERE is_active = 0 AND (is_deleted = 0 OR is_deleted IS NULL)
-                    GROUP BY id
-                ) subq ON ih.id = subq.id AND ih.version_no = subq.max_version
-                WHERE ih.is_active = 0 AND (ih.is_deleted = 0 OR ih.is_deleted IS NULL)
-                """)
+                WITH ranked_versions AS (
+                    SELECT
+                        ih.id,
+                        ih.path,
+                        ih.version_no,
+                        ih.is_active,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY ih.id
+                            ORDER BY 
+                                ih.is_active DESC,  -- active version gets priority
+                                ih.version_no DESC  -- if inactive, pick highest version
+                        ) AS rn
+                    FROM image_history ih
+                    WHERE ih.is_deleted = 0 OR ih.is_deleted IS NULL
+                )
+                SELECT id, path, version_no
+                FROM ranked_versions
+                WHERE rn = 1 AND version_no != 1
+            """)
+
             
             for row in query {
                 // Get row values with proper type casting
@@ -65,6 +87,7 @@ class UndoHandler {
                 return nil
             }
             
+            print("Image  id------->\(imageId), Version \(version)")
             // MARK: - Fetch Image History
             let imageQuery = dbHandler.imageHistoryTable
                 .filter(dbHandler.imageHisOriginalId == imageId &&
@@ -209,7 +232,7 @@ class UndoHandler {
                 }
                 
                 // 1. Get image data for undo
-                guard let imageData = getImageCompleteDetailsUndo(imageId: imageId, version: version) else {
+                guard let imageData = getImageCompleteDetailsUndo(imageId: imageId, version: version-1) else {
                     try db.run("ROLLBACK")
                     return false
                 }
@@ -221,7 +244,7 @@ class UndoHandler {
                 
                 // 3. Get the image history record
                 let imageHistoryQuery = dbHandler.imageHistoryTable
-                    .filter(dbHandler.imageHisOriginalId == imageId && dbHandler.imageHisVersion == version)
+                    .filter(dbHandler.imageHisOriginalId == imageId && dbHandler.imageHisVersion == version-1)
                 
                 guard let imageHistory = try db.pluck(imageHistoryQuery) else {
                     print("Image history record not found")
@@ -242,35 +265,72 @@ class UndoHandler {
                 let lowerBoundStr = lowerBound.toSqlServerFormat()
                 let upperBoundStr = upperBound.toSqlServerFormat()
                 
-                // 4. Update ImageHistory to set is_active = true
-                let updateImageHistory = dbHandler.imageHistoryTable
-                    .filter(dbHandler.imageHisOriginalId == imageId && dbHandler.imageHisVersion == version)
-                    .update(dbHandler.imageHisIsActive <- true)
+                if version-1 != 1 {
+                    
+                    // 4. Update ImageHistory to set is_active = true
+                    let updateImageHistory = dbHandler.imageHistoryTable
+                        .filter(dbHandler.imageHisOriginalId == imageId && dbHandler.imageHisVersion == version-1)
+                        .update(dbHandler.imageHisIsActive <- true)
+                    
+                    try db.run(updateImageHistory)
+                    
+                    // 5. Update ImageEventHistory records in the time range
+                    let imageEventHistoryUpdate = dbHandler.imageEventHistoryTable
+                        .filter(dbHandler.imageEventHisImageId == imageId)
+                        .filter(dbHandler.imageEventHisChangedAt >= lowerBoundStr && dbHandler.imageEventHisChangedAt <= upperBoundStr)
+                    
+                    try db.run(imageEventHistoryUpdate.update(dbHandler.imageEventHisIsActive <- true))
+                    
+                    // 6. Update PersonHistory records linked to this image in the time range
+                    let matchingPersonsQuery = dbHandler.personHistoryTable
+                        .join(dbHandler.imagePersonTable, on: dbHandler.personHisOriginalId == dbHandler.imagePersonPersonId)
+                        .filter(dbHandler.imagePersonImageId == imageId)
+                        .filter(dbHandler.personHisChangedAt >= lowerBoundStr && dbHandler.personHisChangedAt <= upperBoundStr)
+                        .filter(dbHandler.personHisVersion == version-1)
+                    
+                    let matchingPersons = try db.prepare(matchingPersonsQuery)
+                    
+                    for person in matchingPersons {
+                        let updateQuery = dbHandler.personHistoryTable
+                            .filter(dbHandler.personHisId == person[dbHandler.personHisId])
+                            .update(dbHandler.personHisIsActive <- true)
+                        
+                        try db.run(updateQuery)
+                    }
+                    
+                }
                 
-                try db.run(updateImageHistory)
+                
+                //======MARK-  PREVIOUS VERSION  AS INACTIVE
+                // 4. Update ImageHistory to set is_active = true
+                let updateImageHistoryPrev = dbHandler.imageHistoryTable
+                    .filter(dbHandler.imageHisOriginalId == imageId && dbHandler.imageHisVersion == version)
+                    .update(dbHandler.imageHisIsActive <- false)
+                
+                try db.run(updateImageHistoryPrev)
                 
                 // 5. Update ImageEventHistory records in the time range
-                let imageEventHistoryUpdate = dbHandler.imageEventHistoryTable
+                let imageEventHistoryUpdatePrev = dbHandler.imageEventHistoryTable
                     .filter(dbHandler.imageEventHisImageId == imageId)
                     .filter(dbHandler.imageEventHisChangedAt >= lowerBoundStr && dbHandler.imageEventHisChangedAt <= upperBoundStr)
                 
-                try db.run(imageEventHistoryUpdate.update(dbHandler.imageEventHisIsActive <- true))
+                try db.run(imageEventHistoryUpdatePrev.update(dbHandler.imageEventHisIsActive <- false))
                 
                 // 6. Update PersonHistory records linked to this image in the time range
-                let matchingPersonsQuery = dbHandler.personHistoryTable
+                let matchingPersonsQueryPrev = dbHandler.personHistoryTable
                     .join(dbHandler.imagePersonTable, on: dbHandler.personHisOriginalId == dbHandler.imagePersonPersonId)
                     .filter(dbHandler.imagePersonImageId == imageId)
                     .filter(dbHandler.personHisChangedAt >= lowerBoundStr && dbHandler.personHisChangedAt <= upperBoundStr)
-                    //.filter(dbHandler.personHisVersion == version)
+                    .filter(dbHandler.personHisVersion == version)
                 
-                let matchingPersons = try db.prepare(matchingPersonsQuery)
+                let matchingPersonsPrev = try db.prepare(matchingPersonsQueryPrev)
                 
-                for person in matchingPersons {
-                    let updateQuery = dbHandler.personHistoryTable
+                for person in matchingPersonsPrev {
+                    let updateQueryPrev = dbHandler.personHistoryTable
                         .filter(dbHandler.personHisId == person[dbHandler.personHisId])
-                        .update(dbHandler.personHisIsActive <- true)
+                        .update(dbHandler.personHisIsActive <- false)
                     
-                    try db.run(updateQuery)
+                    try db.run(updateQueryPrev)
                 }
                 
                 return true

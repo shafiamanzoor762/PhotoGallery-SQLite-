@@ -27,7 +27,7 @@ class ApiHandler{
 //    public static let baseUrl = "http://192.168.1.13:5000/"
 //        public static let baseUrl = "http://192.168.1.14:5000/"
     //Hp
-    public static let baseUrl = "http://192.168.1.6:5000/"
+    public static let baseUrl = "http://192.168.1.5:5000/"
     
     //VM
 //    public static let baseUrl = "http://192.168.64.4:5000/"

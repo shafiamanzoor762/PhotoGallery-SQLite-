@@ -273,8 +273,11 @@ class ImageHandler {
 //                ))
                 print("done with image")
                 // Handle events
+
+                try db.run(dbHandler.imageEventTable.filter(dbHandler.imageEventImageId == imageId).delete())
+                
                 if let eventNames = eventNames, !eventNames.isEmpty {
-                    try db.run(dbHandler.imageEventTable.filter(dbHandler.imageEventImageId == imageId).delete())
+                    
                     
                     for event in eventNames {
                         guard event.id <= 0 else {
@@ -335,6 +338,7 @@ class ImageHandler {
                     try db.run(imageQuery.update(
                         dbHandler.eventDate <- eventDate == "1111-01-01" ? nil : eventDate,
                         dbHandler.lastModified <- HelperFunctions.currentDateString(),
+                        dbHandler.isSync <- false,
                         dbHandler.imageLocationId <- locationId
                     ))
                 }
@@ -397,6 +401,33 @@ class ImageHandler {
                             dbHandler.imagePersonPersonId <- personId
                         ))
                     }
+                    
+                    try db.run(dbHandler.imageHistoryTable.filter(dbHandler.imageHisIsActive == true).update(dbHandler.imageHisIsActive <- false))
+                    
+                    
+                    for person in persons {
+                        // Fixed person ID check
+                        if person.id <= 0 { continue }
+                        let personId = person.id
+                        
+                        
+                        let query = dbHandler.personTable.filter(dbHandler.personId == personId).limit(1)
+                            
+                        if let person = try db.pluck(query) {
+                                let path = person[dbHandler.personPath]
+                                let name = person[dbHandler.personName]
+                            
+                            ApiHandler.loadFaceImage(from: path ?? "") { faceImage in
+                                    guard let faceImage = faceImage else {
+                                        //completion(nil)  // Skip if image fails to load
+                                        return
+                                    }
+                                    ApiHandler.recognizePersonViaAPI(faceImage: faceImage, name: name, completion: {_ in })
+                                }
+                            }
+                    }
+                    
+                    
                 }
                 print("done with persons")
             }
