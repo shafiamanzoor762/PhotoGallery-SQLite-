@@ -133,6 +133,7 @@ struct EditImageView: View {
             
             Button("Add") {
                 addEvent()
+                viewModel.refreshEvents()
             }
         } message: {
             Text("Enter the name for the new event")
@@ -251,7 +252,9 @@ struct EditImageView: View {
                 
                 //            }
                 
-                Button(action: { showAddEventDialog = true }) {
+                Button(action: {
+                    showAddEventDialog = true
+                }) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 24))
                         .foregroundColor(.white)

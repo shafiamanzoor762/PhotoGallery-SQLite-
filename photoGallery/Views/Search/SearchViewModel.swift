@@ -35,10 +35,13 @@ class SearchModelView: ObservableObject {
         age: Int,
         genders: [String],
         eventNames: [String],
-        dates: [Date],
+        eventDates: [Date],
+        captureDates: [Date],
+        formatedDates: [String],
         locationNames: [String],
         coordinates: [CLLocationCoordinate2D],
-        dateSearchType: SearchHandler.DateSearchType
+        dateSearchType: DateFilterType
+        
     ) {
         isLoading = true
         error = nil
@@ -56,7 +59,9 @@ class SearchModelView: ObservableObject {
                 age: age,
                 genders: genders,
                 eventNames: eventNames,
-                eventDates: dates,
+                eventDates: eventDates,
+                captureDates: captureDates,
+                formatedDates: formatedDates,
                 location: locationObjects.first,
                 locationNames: locationNames,
                 dateSearchType: dateSearchType
@@ -78,45 +83,9 @@ class SearchModelView: ObservableObject {
 
 
     // Main grouping function
-    func groupImagesPerson(_ images: [GalleryImage]) -> PersonViewModel {
-        let groups = groupImagesByPerson(images)
-        print(groups)
-        var pm = PersonViewModel()
-        pm.personGroups = groups
-        print("person VM groups", pm.personGroups)
-        return pm
-    }
     
-    func groupImagesLocation(_ images: [GalleryImage]) -> LocationViewModel {
-            let groups = groupImagesByLocation(images)
-            print(groups)
-            var lm = LocationViewModel()
-            lm.groupedImages = groups
-            print("person VM groups", lm.groupedImages)
-            return lm
-    }
-    
-    func groupImagesDate(_ images: [GalleryImage]) -> DateViewModel {
-            let groups = groupImagesByEventDate(images)
-            print(groups)
-            var dm = DateViewModel()
-            dm.groupedImages = groups
-            print("person VM groups", dm.groupedImages)
-            return dm
-    }
-    
-    func groupImagesEvent(_ images: [GalleryImage]) -> EventViewModel {
-            let groups = groupImagesByEvent(images)
-            print(groups)
-            var em = EventViewModel()
-            em.groupedImages = groups
-            print("person VM groups", em.groupedImages)
-            return em
-    }
-    
-
     // MARK: - Person Grouping
-    private func groupImagesByPerson(_ images: [GalleryImage]) -> [PersonGroup] {
+    func groupImagesByPerson(_ images: [GalleryImage]) -> [PersonGroup] {
         var personGroups = [String: PersonGroup]() // Using person ID as key
         
         for image in images {
@@ -136,7 +105,7 @@ class SearchModelView: ObservableObject {
     }
 
     // MARK: - Event Grouping
-    private func groupImagesByEvent(_ images: [GalleryImage]) -> [String: [GalleryImage]] {
+    func groupImagesByEvent(_ images: [GalleryImage]) -> [String: [GalleryImage]] {
         var eventGroups = [String: [GalleryImage]]()
         
         for image in images {
@@ -155,7 +124,7 @@ class SearchModelView: ObservableObject {
     }
 
     // MARK: - Event Date Grouping
-    private func groupImagesByEventDate(_ images: [GalleryImage]) -> [String: [GalleryImage]] {
+    func groupImagesByEventDate(_ images: [GalleryImage]) -> [String: [GalleryImage]] {
         var dateGroups = [String: [GalleryImage]]()
         
         for image in images {
@@ -173,17 +142,19 @@ class SearchModelView: ObservableObject {
     }
 
     // MARK: - Location Grouping
-    private func groupImagesByLocation(_ images: [GalleryImage]) -> [String: [GalleryImage]] {
+    func groupImagesByLocation(_ images: [GalleryImage]) -> [String: [GalleryImage]] {
         var locationGroups = [String: [GalleryImage]]()
         
         for image in images {
             guard let detail = imageHandler.getImageDetails(imageId: image.id) else { continue }
             
             let locationName = detail.location.name
-            if locationGroups[locationName] != nil {
-                locationGroups[locationName]?.append(image)
-            } else {
-                locationGroups[locationName] = [image]
+            if locationName != "" {
+                if locationGroups[locationName] != nil{
+                    locationGroups[locationName]?.append(image)
+                } else {
+                    locationGroups[locationName] = [image]
+                }
             }
         }
         

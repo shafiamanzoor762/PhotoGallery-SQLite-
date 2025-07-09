@@ -11,6 +11,9 @@ import Combine
 
 class LocationViewModel: ObservableObject {
     @Published var groupedImages: [String: [GalleryImage]] = [:]
+    
+    @Published var selectedImages: Set<Int> = []
+    
     @Published var isLoading = false
     @Published var error: Error?
     

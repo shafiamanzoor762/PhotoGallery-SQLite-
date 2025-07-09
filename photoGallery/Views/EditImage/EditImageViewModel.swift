@@ -51,6 +51,10 @@ class EditImageViewModel: ObservableObject {
         allEvents = eventHandler.fetchAllEvents()
     }
     
+    func refreshEvents(){
+        allEvents = eventHandler.fetchAllEvents()
+    }
+    
     func saveChanges(completion: @escaping (Bool) -> Void) {
         isLoading = true
         error = nil

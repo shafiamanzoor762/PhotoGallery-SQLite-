@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct TrashView: View {
-    @StateObject private var viewModel = UndoChangesViewModel()
+    @StateObject private var viewModel = TrashViewModel()
     @State private var uiImage: UIImage?
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var navBarState: NavBarState
@@ -26,7 +26,7 @@ struct TrashView: View {
             .background(Color.white.edgesIgnoringSafeArea(.all))
             .navigationDestination(isPresented: $isShowingDetail) {
                 if let image = selectedImage {
-                    PictureView(image: image, screenName: "UndoView")
+                    PictureView(image: image, screenName: "Trash View")
                 }
             }
             .alert(isPresented: $showAlert) {
@@ -34,7 +34,7 @@ struct TrashView: View {
                     }
             .onAppear {
                 navBarState.isHidden = true
-                viewModel.getUndoableImages()
+                viewModel.getTrashImages()
             }
             .onDisappear {
                 navBarState.isHidden = false
@@ -43,16 +43,40 @@ struct TrashView: View {
     
     private var mainContentView: some View {
         VStack(spacing: 20) {
-            topBar
-            imageList
-            Spacer()
+            
+            if viewModel.trashImages.count > 0 {
+                topBar
+                imageList
+                Spacer()
+            }
+            else{
+                VStack(spacing: 10) {
+                    Text("No Deleted Images Yet!")
+                        .foregroundStyle(Defs.seeGreenColor)
+                        .font(.headline)
+                    
+                    Text("Deleted images appear here and can be restored.")
+                        .foregroundStyle(Defs.lightPink)
+                        .font(.subheadline)
+                }
+            }
         }
     }
     
     private var topBar: some View {
         HStack {
             Spacer()
-            ButtonWhite(title: "Undo All", action: {})
+            ButtonWhite(title: "Restore All", action: {
+                Task{
+                    let success = await viewModel.restoreAllImages()
+                    if success {
+                        // Refresh the list or show success message
+                        viewModel.getTrashImages()
+                    }
+                    alertMessage = success ? "Restoring all images successful" : "Restoring all images failed"
+                    showAlert = true
+                }
+            })
         }
         .padding(10)
         .background(Defs.seeGreenColor)
@@ -62,7 +86,7 @@ struct TrashView: View {
     private var imageList: some View {
         ScrollView {
             VStack(spacing: 20) {
-                ForEach(viewModel.undoableImages) { item in
+                ForEach(viewModel.trashImages) { item in
                     imageRow(for: item)
                 }
             }
@@ -70,7 +94,7 @@ struct TrashView: View {
         }
     }
     
-    private func imageRow(for item: UndoData) -> some View {
+    private func imageRow(for item: GalleryImage) -> some View {
         HStack(alignment: .center, spacing: 16) {
             Image2View(imagePath: item.fullPath)
             Spacer()
@@ -83,30 +107,26 @@ struct TrashView: View {
         .padding(.horizontal)
     }
     
-    private func actionButtons(for item: UndoData) -> some View {
+    private func actionButtons(for item: GalleryImage) -> some View {
         VStack(spacing: 10) {
             ButtonOutline(title: "View") {
                 
                 do {
-                        let imageDetail = try viewModel.getImageCompleteDetailUndo(imageId: item.id, version: item.version_no)
+                    let imageDetail = try viewModel.getImageCompleteDetailTrash(imageId: item.id)
                         selectedImage = imageDetail
                         isShowingDetail = true
                     } catch {
                         print("Error loading image details: \(error)")
                     }
             }
-            ButtonOutline(title: "Undo", action: {
+            ButtonOutline(title: "Restore", action: {
                 Task{
-                    let success = await viewModel.undoData(imageId: item.id, version: item.version_no)
+                    let success = await viewModel.restoreImage(imageId: item.id)
                     if success {
-                        // Refresh the list or show success message
-                        viewModel.getUndoableImages()
-                        
-                        alertMessage = success ? "Undo successful" : "Undo failed"
-                    } else {
-                        alertMessage = "Please enter valid numbers"
-                        
+                        //Refresh the list
+                        viewModel.getTrashImages()
                     }
+                    alertMessage = success ? "Restore image successful" : "Restore image failed"
                     showAlert = true
                 }
             })
@@ -116,6 +136,6 @@ struct TrashView: View {
 }
 
 
-#Preview {
-    TrashView()
-}
+//#Preview {
+//    TrashView()
+//}

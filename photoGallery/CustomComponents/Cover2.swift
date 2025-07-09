@@ -13,9 +13,11 @@ struct Cover2: View {
     
     var emojiForView: String {
             switch tabViewName {
-            case "Sync": return "🔄"
+            case "Sync": return "⇄"
             case "Search": return "🔎"
-            case "Undo Changes": return "⎌"
+            case "Undo Changes": return "↺"
+            case "Redo Changes": return "↻"
+            case "Trash Images": return "🗑"
             default: return ""
             }
         }
@@ -64,7 +66,11 @@ struct Cover2: View {
                 }
                 
                 if tabViewName == "Redo Changes" {
-                    UndoChangesView()
+                    RedoChangesView()
+                }
+                
+                if tabViewName == "Featured Faces" {
+                    FeaturedFacesView()
                 }
                 
                 if tabViewName == "Trash Images" {

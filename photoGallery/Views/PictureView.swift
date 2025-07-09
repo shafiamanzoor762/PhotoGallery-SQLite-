@@ -25,14 +25,7 @@ struct PictureView: View {
     @EnvironmentObject var navBarState: NavBarState
     
     @StateObject var viewModel = PersonViewModel()
-    
-//    var tabItems: [TabItemDescription] = [
-//        .init(imageName: "photo", title: "PICTURE VIEW"),
-//        .init(imageName: "pencil", title: "EDIT"),
-//        .init(imageName: "list.bullet", title: "DETAILS"),
-//        .init(imageName: "trash", title: "DELETE"),
-//        .init(imageName: "info.circle", title: "INFO")
-//    ]
+
     
     var body: some View {
         VStack {
@@ -45,28 +38,28 @@ struct PictureView: View {
                 Menu {
                     
                     
-//                    Button(action: {
-//                        shareWithMetadata = false
-//                        if let imagee = uiImage {
-//                            shareItems = [imagee]
-//                            showShare = true
-//                        }
-//                    }) {
-//                        Label("Share Image Only", systemImage: "square.and.arrow.up.fill")
-//                    }
-//
-//                    Button(action: {
-//                        shareWithMetadata = true
-//                        
-//                        let metadata = generateMetadata(from: image)
-//                        
-//                        if let imagee = uiImage {
-//                            shareItems = [imagee, metadata]
-//                        }
-//                        showShare = true
-//                    }) {
-//                        Label("Share Image with Metadata", systemImage: "richtext.page.fill")
-//                    }
+                    Button(action: {
+                        shareWithMetadata = false
+                        if let imagee = uiImage {
+                            shareItems = [imagee]
+                            showShare = true
+                        }
+                    }) {
+                        Label("Share Image Only", systemImage: "square.and.arrow.up.fill")
+                    }
+
+                    Button(action: {
+                        shareWithMetadata = true
+                        
+                        let metadata = ShareHelper.generateMetadata(from: image)
+                        
+                        if let imagee = uiImage {
+                            shareItems = [imagee, metadata]
+                        }
+                        showShare = true
+                    }) {
+                        Label("Share Image with Metadata", systemImage: "richtext.page.fill")
+                    }
 
                     
                     Divider()
@@ -199,35 +192,35 @@ struct PictureView: View {
         .navigationTitle(screenName)
         
         .sheet(isPresented: $showEdit) {  // Sheet to show Edit
-                    EditImageView(image: image)
+            EditImageView(image: image)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Defs.seeGreenColor)
-                        .presentationDetents([.medium, .large])  // Custom sizes for the popup
-                        .presentationDragIndicator(.visible) // Show a drag indicator for the popup
-                }
+                .presentationDetents([.medium, .large])  // Custom sizes for the popup
+                .presentationDragIndicator(.visible) // Show a drag indicator for the popup
+        }
         
         .sheet(isPresented: $showDetails) {  // Sheet to show details
-                    DetailsImageView(image: image)
+            DetailsImageView(image: image)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Defs.seeGreenColor)
-                        .presentationDetents([.medium, .large])
-                        .presentationDragIndicator(.visible)
-                }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
         
         .sheet(isPresented: $showDelete) {  // Sheet to show delete options
-                    DeleteImageView(image: image)
+            DeleteImageView(image: image)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Defs.seeGreenColor)
-                        .presentationDetents([.medium, .large])
-                        .presentationDragIndicator(.visible)
-                }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
         
         .sheet(isPresented: $showInfo) {  // Sheet to show info
-                    InfoImageView()
+            InfoImageView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Defs.seeGreenColor)
-                        .presentationDetents([.medium, .large])
-                        .presentationDragIndicator(.visible)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
         
         .sheet(isPresented: $showShare) {
@@ -240,33 +233,6 @@ struct PictureView: View {
     private func loadImage() {
         let fileURL = URL(fileURLWithPath: image.fullPath)
         uiImage = UIImage(contentsOfFile: fileURL.path)
-    }
-    
-    func generateMetadata(from image: ImageeDetail) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-
-        let captureDate = formatter.string(from: image.capture_date)
-        let eventDate = formatter.string(from: image.event_date)
-        let locationName = image.location.name
-        let coordinates = "(\(image.location.latitude), \(image.location.longitude))"
-
-        let personDescriptions = image.persons.map { person -> String in
-            let gender = person.gender == "M" ? "♂" : person.gender == "F" ? "♀" : "⚧"
-            let age = person.age != nil ? "\(person.age!) yrs" : "Age N/A"
-            return "\(person.name) \(gender), \(age)"
-        }.joined(separator: ", ")
-
-        let eventNames = image.events.map { $0.name }.joined(separator: ", ")
-
-        return """
-        📸 Photo taken on \(captureDate)
-        🎉 Event: \(eventNames)
-        📍 Location: \(locationName) \(coordinates)
-        🧑‍🤝‍🧑 People in photo: \(personDescriptions)
-        🗓️ Event Date: \(eventDate)
-        """
     }
 
 }

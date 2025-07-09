@@ -8,6 +8,16 @@
 import SwiftUI
 import MapKit
 
+enum DateFilterType: String, CaseIterable, Identifiable {
+    case day = "Day"
+    case month = "Month"
+    case year = "Year"
+    case complete = "Complete Date"
+    
+    var id: String { self.rawValue }
+}
+
+
 struct SearchView: View {
     // MARK: - State Properties
     @StateObject private var viewModel = SearchModelView()
@@ -16,13 +26,24 @@ struct SearchView: View {
     @State private var selectedNames: [String] = []
     //@State private var selectedAges: [String] = []
     @State private var selectedEvents: [String] = []
-    @State private var selectedDates: [Date] = []
+    
+    @State private var selectedEventDates: [Date] = []
+    @State private var eventDate = Date()
+    
+    @State private var selectedCaptureDates: [Date] = []
     @State private var captureDate = Date()
+    
+    @State private var selectedCaptureDates1: [Date] = []
+    @State private var captureDate1 = Date()
+    @State private var filterType: DateFilterType = .day
+    
     @State private var events = [Eventt]()
     @State private var locationNameInput = ""
     @State private var selectedLocationNames: [String] = []
-    @State private var navigateToPicturesView = false
+
+
     
+    @State private var navigateToPicturesView = false
     @State private var showSuggestions = false
     
     @State private var region = MKCoordinateRegion(
@@ -48,7 +69,9 @@ struct SearchView: View {
                 ageSection
                 genderSection
                 eventSection
-                dateSection
+                eventDateSection
+                captureDateSection
+                captureDateSectionByDayMonthYear
                 locationNameSection
 //                mapSection
                 searchButton
@@ -63,17 +86,17 @@ struct SearchView: View {
         .onDisappear {
             navBarState.isHidden = false
         }
-        .navigationDestination(isPresented: $navigateToPicturesView) {
-            if let results = viewModel.searchResults {
-                PicturesView(screenName: "Search Results", images: results)
-            }
-        }
-        
-//        .sheet(isPresented: $navigateToPicturesView) {
+//        .navigationDestination(isPresented: $navigateToPicturesView) {
 //            if let results = viewModel.searchResults {
-//                FilteredResultsView(initialResults: results)
+//                PicturesView(screenName: "Search Results", images: results)
 //            }
 //        }
+        
+        .sheet(isPresented: $navigateToPicturesView) {
+            if let results = viewModel.searchResults {
+                FilteredResultsView(initialResults: results)
+            }
+        }
     }
     
     // MARK: - View Components
@@ -153,8 +176,8 @@ struct SearchView: View {
                 RadioButton(selectedText: $viewModel.selectedGender.genderBinding(), text: "Female")
                 
                 RadioButton(selectedText: $viewModel.selectedGender, text: "Both")
-                //RadioButton(selectedText: $viewModel.selectedGender, text: "Other")
-                //RadioButton(selectedText: $viewModel.selectedGender, text: "All")
+                RadioButton(selectedText: $viewModel.selectedGender, text: "Other")
+                RadioButton(selectedText: $viewModel.selectedGender, text: "All")
             }
         }
     }
@@ -163,32 +186,113 @@ struct SearchView: View {
     private var eventSection: some View {
         VStack(alignment: .leading) {
             SectionHeader("Event")
-            ForEach(events, id: \.self.id) { event in
-                HStack {
-                    Toggle(isOn: bindingForEvent(event.name)) {
-                        Text(event.name)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(events, id: \.self.id) { event in
+                        HStack {
+                            Toggle(isOn: bindingForEvent(event.name)) {
+                                Text(event.name)
+                            }
+                        }
                     }
                 }
             }
+            .frame(height: 100)
         }
     }
+
     
     // Date Section
-    private var dateSection: some View {
+    private var eventDateSection: some View {
         VStack(alignment: .leading) {
             SectionHeader("Event Date")
             HStack {
-                DatePicker("", selection: $captureDate, displayedComponents: .date)
+                DatePicker("", selection: $eventDate, displayedComponents: .date)
                     .labelsHidden()
-                addButton(action: addDate)
+                addButton(action: addEventDate)
             }
-            selectedItemsView(items: selectedDates.map { $0.formatted(date: .numeric, time: .omitted) }, removeAction: { dateString in
-                if let index = selectedDates.firstIndex(where: { $0.formatted(date: .numeric, time: .omitted) == dateString }) {
-                    selectedDates.remove(at: index)
+            selectedItemsView(items: selectedEventDates.map { $0.formatted(date: .numeric, time: .omitted) }, removeAction: { dateString in
+                if let index = selectedEventDates.firstIndex(where: { $0.formatted(date: .numeric, time: .omitted) == dateString }) {
+                    selectedEventDates.remove(at: index)
                 }
             })
         }
     }
+    
+    private var captureDateSection: some View {
+        VStack(alignment: .leading) {
+            SectionHeader("Capture Date")
+            HStack {
+                DatePicker("", selection: $captureDate, displayedComponents: .date)
+                    .labelsHidden()
+                addButton(action: addCaptureDate)
+            }
+            selectedItemsView(items: selectedCaptureDates.map { $0.formatted(date: .numeric, time: .omitted) }, removeAction: { dateString in
+                if let index = selectedCaptureDates.firstIndex(where: { $0.formatted(date: .numeric, time: .omitted) == dateString }) {
+                    selectedCaptureDates.remove(at: index)
+                }
+            })
+        }
+    }
+    
+    private var captureDateSectionByDayMonthYear: some View {
+        VStack(alignment: .leading) {
+            SectionHeader("Capture Date")
+
+            // Filter Picker
+            Picker("Filter", selection: $filterType) {
+                ForEach(DateFilterType.allCases) { type in
+                    Text(type.rawValue).tag(type)
+                }
+            }
+            .pickerStyle(SegmentedPickerStyle())
+
+            HStack {
+                DatePicker("", selection: $captureDate1, displayedComponents: .date)
+                    .labelsHidden()
+
+                addButton(action: addCaptureDate1)
+            }
+
+            selectedItemsView(items: selectedCaptureDates1.map { formatDate($0, as: filterType) }, removeAction: { dateString in
+                if let index = selectedCaptureDates1.firstIndex(where: { formatDate($0, as: filterType) == dateString }) {
+                    selectedCaptureDates1.remove(at: index)
+                }
+            })
+        }
+    }
+    
+//    func formatDate(_ date: Date, as filter: DateFilterType) -> String {
+//        let formatter = DateFormatter()
+//        switch filter {
+//        case .day:
+//            formatter.dateFormat = "EEEE" // Full weekday name
+//        case .month:
+//            formatter.dateFormat = "MMMM" // Full month name
+//        case .year:
+//            formatter.dateFormat = "yyyy" // Year
+//        }
+//        return formatter.string(from: date)
+//    }
+    
+    func formatDate(_ date: Date, as filter: DateFilterType) -> String {
+        let formatter = DateFormatter()
+        switch filter {
+        case .day:
+            formatter.dateFormat = "EEEE"        // e.g., "Tuesday"
+        case .month:
+            formatter.dateFormat = "MMMM"        // e.g., "July"
+        case .year:
+            formatter.dateFormat = "yyyy"        // e.g., "2025"
+        case .complete:
+            formatter.dateFormat = "yyyy-MM-dd"  // e.g., "2025-07-08"
+        }
+        return formatter.string(from: date)
+    }
+
+
+
     
     // Location Name Section
     private var locationNameSection: some View {
@@ -337,9 +441,21 @@ struct SearchView: View {
         selectedNames.removeAll { $0 == name }
     }
     
-    private func addDate() {
-        if !selectedDates.contains(where: { Calendar.current.isDate($0, inSameDayAs: captureDate) }) {
-            selectedDates.append(captureDate)
+    private func addEventDate() {
+        if !selectedEventDates.contains(where: { Calendar.current.isDate($0, inSameDayAs: eventDate) }) {
+            selectedEventDates.append(eventDate)
+        }
+    }
+    
+    private func addCaptureDate() {
+        if !selectedCaptureDates.contains(where: { Calendar.current.isDate($0, inSameDayAs: captureDate) }) {
+            selectedCaptureDates.append(captureDate)
+        }
+    }
+    
+    private func addCaptureDate1() {
+        if !selectedCaptureDates1.contains(where: { Calendar.current.isDate($0, inSameDayAs: captureDate1) }) {
+            selectedCaptureDates1.append(captureDate1)
         }
     }
     
@@ -382,18 +498,22 @@ struct SearchView: View {
         }
 
 //        let genders = viewModel.selectedGender == "All" ? ["M,F,U"] : [viewModel.selectedGender]
+        
+        let formattedDates = selectedCaptureDates1.map { formatDate($0, as: filterType) }
 
         Task{
-            print(genders)
+            //print(genders)
             await viewModel.performSearch(
                 personNames: selectedNames,
                 age: Int(ageInput) ?? 0,
                 genders: genders,
                 eventNames: selectedEvents,
-                dates: selectedDates,
+                eventDates: selectedEventDates,
+                captureDates: selectedCaptureDates,
+                formatedDates: formattedDates,
                 locationNames: selectedLocationNames,
                 coordinates: selectedLocations.map { $0.coordinate },
-                dateSearchType: .day
+                dateSearchType: filterType
             )
         }
     }

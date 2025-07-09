@@ -137,12 +137,6 @@ class PersonHandler {
         return result
     }
 
-
-    
-
-    
-    
-    
     func insertLink(person1Id: Int, person2Id: Int) throws -> [String: Any] {
             guard let db = dbHandler.db else {
                 throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not initialized"])
@@ -280,5 +274,48 @@ class PersonHandler {
             age: person[dbHandler.personAge]
         )
     }
+    
+    func removeLinkIfExists(person1Id: Int, person2Id: Int) throws -> Bool {
+        guard let db = dbHandler.db else {
+            throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not initialized"])
+        }
 
+        // Check if link exists
+        if try linkExists(person1Id: person1Id, person2Id: person2Id) {
+            let linkTable = dbHandler.linkTable
+            let linkPerson1Id = dbHandler.linkPerson1Id
+            let linkPerson2Id = dbHandler.linkPerson2Id
+
+            // Build the delete query (bidirectional match)
+            let deleteQuery = linkTable.filter(
+                (linkPerson1Id == person1Id && linkPerson2Id == person2Id) ||
+                (linkPerson1Id == person2Id && linkPerson2Id == person1Id)
+            )
+
+            // Perform deletion
+            try db.run(deleteQuery.delete())
+            return true
+//            return  "Link removed between person \(person1Id) and \(person2Id)."
+        } else {
+            return false
+//            return "No link found between person \(person1Id) and \(person2Id)."
+        }
+    }
+    
+    func getAllLinks() throws -> [Link] {
+        guard let db = dbHandler.db else {
+            throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not initialized"])
+        }
+
+        var links = [Link]()
+
+        for row in try db.prepare(dbHandler.linkTable) {
+            let person1Id = row[dbHandler.linkPerson1Id]
+            let person2Id = row[dbHandler.linkPerson2Id]
+            links.append(Link(person1Id: person1Id, person2Id: person2Id))
+        }
+
+        return links
+    }
+    
 }

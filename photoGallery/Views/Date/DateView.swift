@@ -6,6 +6,11 @@ struct DateView: View {
     @State private var selectedEventKey: String?
     @EnvironmentObject var navManager: NavManager
     
+    //
+    @State private var isSelectionModeActive = false
+    @State private var selectedGalleryImages: [GalleryImage]? = nil
+    @State private var showShareSheet = false
+    
     var body: some View {
         NavigationStack {
             Group {
@@ -17,13 +22,22 @@ struct DateView: View {
                 } else {
                     contentView
                 }
-            }            .toolbar {
+            }
+            .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: viewModel.refresh) {
                         Image(systemName: "arrow.clockwise")
                     }
                 }
             }
+            .sheet(isPresented: $showShareSheet) {
+                if let images = selectedGalleryImages {
+                    ShareViewHelper(
+                        images: ShareHelper.getSelectedGalleryImages(from: images, selectedIDs: viewModel.selectedImages),
+                    )
+                }
+            }
+            
         }
     }
     
@@ -65,10 +79,24 @@ struct DateView: View {
     private func destinationView(for key: String) -> some View {
         Group {
             if let images = viewModel.groupedImages[key] {
-                PicturesView(
-                    screenName: key,
-                    images: images
-                )
+                ZStack {
+                    SelectionToolbar(
+                        isSelectionModeActive: $isSelectionModeActive,
+                        selectedItems: $viewModel.selectedImages,
+                        mode: .shareOnly,
+                        onShare: {
+                            print("Selected Images ------>>>>>>>>",viewModel.selectedImages.count)
+                            if viewModel.selectedImages.count > 0 {
+                                selectedGalleryImages = images
+                                showShareSheet = true
+                            }
+                        }
+                    )
+                    .zIndex(1)
+                    Pictures1View(
+                        screenName: key, images: images, isSelectionModeActive: $isSelectionModeActive, selectedImageIDs: $viewModel.selectedImages
+                    )
+                }
             }
         }
     }

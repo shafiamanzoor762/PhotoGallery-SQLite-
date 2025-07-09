@@ -256,7 +256,7 @@ class ImageHandler {
  
     // MARK: - Edit Image
     
-    func editImage(imageId: Int, persons: [Personn]?, eventNames: [Eventt]?, eventDate: String?, location: Locationn?, completion: @escaping (Swift.Result<Void, Error>) -> Void) {
+    func editImage(imageId: Int, persons: [Personn]?, eventNames: [Eventt]?, eventDate: String?, location: Locationn?, isUndo: Bool? = false, completion: @escaping (Swift.Result<Void, Error>) -> Void) {
         do {
             let db = try dbHandler.db!
             
@@ -402,8 +402,9 @@ class ImageHandler {
                         ))
                     }
                     
-                    try db.run(dbHandler.imageHistoryTable.filter(dbHandler.imageHisIsActive == true).update(dbHandler.imageHisIsActive <- false))
-                    
+                    if !(isUndo ?? false) {
+                        try db.run(dbHandler.imageHistoryTable.filter(dbHandler.imageHisIsActive == true).update(dbHandler.imageHisIsActive <- false))
+                    }
                     
                     for person in persons {
                         // Fixed person ID check
@@ -580,6 +581,53 @@ class ImageHandler {
         } catch {
             completion(.failure(error))
             print("❌ Error marking image as deleted: \(error)")
+        }
+    }
+    
+    
+    func getDeletedImages() throws -> [GalleryImage] {
+        guard let db = dbHandler.db else {
+            throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not initialized"])
+        }
+        
+        var deletedImages = [GalleryImage]()
+        
+        // Query: Select all where is_deleted == true
+        let query = dbHandler.imageTable.filter(dbHandler.isDeleted == true)
+        
+        for row in try db.prepare(query) {
+            let id = row[dbHandler.imageId]
+            let path = row[dbHandler.imagePath]
+            let image = GalleryImage(id: id, path: path)
+            deletedImages.append(image)
+        }
+        
+        return deletedImages
+    }
+
+    
+    func restoreImage(imageId: Int) async -> Bool {
+        do {
+            guard let db = dbHandler.db else {
+                throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not initialized"])
+            }
+            
+            // Find the image by ID
+            let imageQuery = dbHandler.imageTable.filter(dbHandler.imageId == imageId)
+            
+            // Update is_deleted to false (0) and update last_modified
+            let update = imageQuery.update(
+                dbHandler.isDeleted <- false,
+                dbHandler.lastModified <- HelperFunctions.currentDateString()
+            )
+            
+            try db.run(update)
+            print("✅ Image \(imageId) marked as deleted")
+            return true
+            
+        } catch {
+            print("❌ Error marking image as deleted: \(error)")
+            return false
         }
     }
     

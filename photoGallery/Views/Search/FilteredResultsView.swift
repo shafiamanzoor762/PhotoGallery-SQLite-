@@ -12,10 +12,11 @@ struct FilteredResultsView: View {
     @StateObject private var viewModel = SearchModelView()
     
     @State private var selectedFilter: String = "Show Images"
-    @State private var personVM: PersonViewModel = PersonViewModel()
-    @State private var eventVM: EventViewModel = EventViewModel()
-    @State private var dateVM: DateViewModel = DateViewModel()
-    @State private var locationVM: LocationViewModel = LocationViewModel()
+//    @State private var personVM: PersonViewModel = PersonViewModel()
+    @State var personGroups: [PersonGroup] = []
+    @State private var eventGroups: [String: [GalleryImage]] = [:]
+    @State private var eventDateGroups: [String: [GalleryImage]] = [:]
+    @State private var locationGroups: [String: [GalleryImage]] = [:]
     
     private let filterOptions = ["Show Images", "By People", "By Location", "By Event", "By Date"]
     
@@ -33,6 +34,9 @@ struct FilteredResultsView: View {
             // Preload all filter data when view appears
             loadAllFilterData()
         }
+//        .onChange(of: selectedFilter) { newValue in
+//            loadAllFilterData() // if needed on each tab change
+//        }
     }
     
     private var filterTabs: some View {
@@ -63,13 +67,13 @@ struct FilteredResultsView: View {
     private var contentView: some View {
         switch selectedFilter {
         case "By People":
-                return AnyView(PersonView(viewModel: personVM))
+                return AnyView(PersonsGroupView(personGroups: personGroups))
         case "By Location":
-                return AnyView(LocationView(viewModel: locationVM))
+                return AnyView(LocationGroupsView(groupedImages: locationGroups))
         case "By Event":
-                return AnyView(EventView(viewModel: eventVM))
+                return AnyView(EventGroupsView(groupedImages: eventGroups))
         case "By Date":
-                return AnyView(DateView(viewModel: dateVM))
+                return AnyView(DateGroupsView(groupedImages: eventDateGroups))
         default:
                 return AnyView(
                     NavigationStack {
@@ -81,10 +85,10 @@ struct FilteredResultsView: View {
     
     private func loadAllFilterData() {
         // Load all filter data upfront
-        personVM = viewModel.groupImagesPerson(initialResults)
-        eventVM = viewModel.groupImagesEvent(initialResults)
-        dateVM = viewModel.groupImagesDate(initialResults)
-        locationVM = viewModel.groupImagesLocation(initialResults)
+        personGroups = viewModel.groupImagesByPerson(initialResults)
+        eventGroups = viewModel.groupImagesByEvent(initialResults)
+        eventDateGroups = viewModel.groupImagesByEventDate(initialResults)
+        locationGroups = viewModel.groupImagesByLocation(initialResults)
     }
     
 

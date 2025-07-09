@@ -238,10 +238,10 @@ class UndoHandler {
                 }
                 
                 // 2. Edit the image data with the historical version
-                var imgHandler = ImageHandler(dbHandler: DBHandler())
-                try await imgHandler.editImage(imageId: imageData.id, persons: imageData.persons, eventNames: imageData.events, eventDate: Date.toDatabaseString(imageData.event_date)(), location: imageData.location, completion: {_ in })
+                let imgHandler = ImageHandler(dbHandler: DBHandler())
+                 imgHandler.editImage(imageId: imageData.id, persons: imageData.persons, eventNames: imageData.events, eventDate: Date.toDatabaseString(imageData.event_date)(), location: imageData.location, isUndo: true, completion: {_ in })
                 
-                
+                print("Edit Done")
                 // 3. Get the image history record
                 let imageHistoryQuery = dbHandler.imageHistoryTable
                     .filter(dbHandler.imageHisOriginalId == imageId && dbHandler.imageHisVersion == version-1)
@@ -297,8 +297,11 @@ class UndoHandler {
                         
                         try db.run(updateQuery)
                     }
-                    
+                    print("version-1 Done")
                 }
+//                else {
+//                    try db.run(dbHandler.imageHistoryTable.filter(dbHandler.imageHisIsActive == true).update(dbHandler.imageHisIsActive <- false))
+//                }
                 
                 
                 //======MARK-  PREVIOUS VERSION  AS INACTIVE
@@ -332,6 +335,7 @@ class UndoHandler {
                     
                     try db.run(updateQueryPrev)
                 }
+                print("Done Done")
                 
                 return true
                 
@@ -341,18 +345,5 @@ class UndoHandler {
             }
         }
         
-        // Helper method to get complete image details for undo
-//        static func getImageCompleteDetailsUndo(imageId: Int, version: Int, dbHandler: DBHandler) -> Row? {
-//            do {
-//                guard let db = dbHandler.db else { return nil }
-//                
-//                let query = dbHandler.imageHistoryTable
-//                    .filter(dbHandler.imageHisOriginalId == imageId && dbHandler.imageHisVersion == version)
-//                
-//                return try db.pluck(query)
-//            } catch {
-//                print("Error getting image details for undo: \(error)")
-//                return nil
-//            }
-//        }
+
 }

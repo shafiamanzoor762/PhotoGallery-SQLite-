@@ -1,65 +1,3 @@
-//
-//
-//import SwiftUI
-//
-//struct EventView: View {
-//    @State private var selectedIndex: Int? = nil
-//    @EnvironmentObject var navManager: NavManager  // Access nav state
-//    @State private var image = ImgesData.imagesDetail
-//
-//    private func getSelectedImages() -> [ImageeDetail] {
-//        var images: [ImageeDetail] = []
-//        if image.indices.contains(5) {
-//            images.append(image[5])
-//        }
-//        if image.indices.contains(6) {
-//            images.append(image[6])
-//        }
-//        return images
-//    }
-//
-//    var body: some View {
-//        let selectedImages = getSelectedImages()  // Compute outside the loop to improve performance
-//        
-//        return NavigationStack {
-//            ScrollView {
-//                LazyVGrid(columns: [
-//                    GridItem(.flexible()),
-//                    GridItem(.flexible()),
-//                    GridItem(.flexible())
-//                ], spacing: 20) {
-//                    ForEach(Array(image.enumerated()), id: \.element.id) { index, img in
-//                        
-//                        NavigationLink(
-//                            tag: index,
-//                            selection: $selectedIndex
-//                        ) {
-//                            PicturesView(screenName: img.events.first?.Name ?? "Unknown", images: selectedImages)
-//                        } label: {
-//                            if img.persons.count>0{
-//                                CardSquare(
-//                                    title: img.events.first?.Name ?? "Unknown",
-//                                    count: "\(index + 1)",
-//                                    imageURL: img.path
-//                                )
-//                                
-//                                .padding(.top, -10)
-//                                .contentShape(Rectangle())
-//                                .onTapGesture {
-//                                    print("Card \(index + 1) tapped")
-//                                    selectedIndex = index
-//                                }
-//                            }
-//                        }
-//                        .buttonStyle(PlainButtonStyle())
-//                    }
-//                }
-//                .padding()
-//            }
-//        }
-//    }
-//}
-
 
 
 import SwiftUI
@@ -69,6 +7,10 @@ struct EventView: View {
     @State private var selectedEventKey: String?
     @EnvironmentObject var navManager: NavManager
     
+    //
+    @State private var isSelectionModeActive = false
+    @State private var selectedGalleryImages: [GalleryImage]? = nil
+    @State private var showShareSheet = false
     
     var body: some View {
         NavigationStack {
@@ -90,6 +32,15 @@ struct EventView: View {
                     }
                 }
             }
+            
+            .sheet(isPresented: $showShareSheet) {
+                if let images = selectedGalleryImages {
+                    ShareViewHelper(
+                        images: ShareHelper.getSelectedGalleryImages(from: images, selectedIDs: viewModel.selectedImages),
+                    )
+                }
+            }
+            
         }
     }
     
@@ -116,10 +67,28 @@ struct EventView: View {
                             selection: $selectedEventKey
                         ) {
                             if let images = viewModel.groupedImages[bindingKey.wrappedValue] {
-                                PicturesView(
-                                    screenName: bindingKey.wrappedValue,  // or viewModel.eventName(for: key) if you need formatting
-                                    images: images
-                                )
+                                ZStack {
+                                    SelectionToolbar(
+                                        isSelectionModeActive: $isSelectionModeActive,
+                                        selectedItems: $viewModel.selectedImages,
+                                        mode: .shareOnly,
+                                        onShare: {
+                                            print("Selected Images ------>>>>>>>>",viewModel.selectedImages.count)
+                                            if viewModel.selectedImages.count > 0 {
+                                                selectedGalleryImages = images
+                                                showShareSheet = true
+                                            }
+                                        }
+                                    )
+                                    .zIndex(1)
+                                    Pictures1View(
+                                        screenName: key, images: images, isSelectionModeActive: $isSelectionModeActive, selectedImageIDs: $viewModel.selectedImages
+                                    )
+                                }
+//                                PicturesView(
+//                                    screenName: bindingKey.wrappedValue,  // or viewModel.eventName(for: key) if you need formatting
+//                                    images: images
+//                                )
                             }
                         } label: {
                             CardSquare(

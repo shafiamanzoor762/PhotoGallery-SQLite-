@@ -137,6 +137,10 @@ struct Cover: View {
                 Label("Redo Changes", systemImage: "arrow.uturn.forward")
             }
             
+            Button(action: featuredFacesAction) {
+                Label("Featured Faces", systemImage: "person.fill.badge.minus")
+            }
+            
             Button(action: trashAction) {
                 Label("Trash Images", systemImage: "trash.fill")
             }
@@ -259,6 +263,12 @@ struct Cover: View {
     
     private func redoChangesAction() {
         path.append("Redo Changes")
+        navBarState.isHidden = true
+        dismiss()
+    }
+    
+    private func featuredFacesAction() {
+        path.append("Featured Faces")
         navBarState.isHidden = true
         dismiss()
     }

@@ -24,12 +24,14 @@ struct ImageeDetailData {
 }
 
 class ApiHandler{
-//    public static let baseUrl = "http://192.168.1.13:5000/"
-//        public static let baseUrl = "http://192.168.1.14:5000/"
-    //Hp
+    
+//    Hp
     public static let baseUrl = "http://192.168.1.5:5000/"
     
-    //VM
+//    Mobile HotSpot
+//    public static let baseUrl = "http://192.168.153.208:5000/"
+    
+//    VM
 //    public static let baseUrl = "http://192.168.64.4:5000/"
     
 
@@ -42,6 +44,7 @@ class ApiHandler{
     public static let addMobileImageUrl = "\(ApiHandler.baseUrl)add_mobile_image"
     public static let getPersonGroupsUrl = "\(ApiHandler.baseUrl)get_mobile_person_groups"
     public static let getUnLinkedPersonsByIdUrl = "\(ApiHandler.baseUrl)get_unlinked_persons_by_id"
+    public static let moveImages  =  "\(ApiHandler.baseUrl)move_images_for_frontend"
     
     // Tagging
     public static let addTagPath = "\(ApiHandler.baseUrl)tagimage"
@@ -758,8 +761,7 @@ class ApiHandler{
                         completion(.failure(error))
                     }
                 }
-                
-                
+  
             }.resume()
         } catch {
             completion(.failure(error))
@@ -935,6 +937,56 @@ class ApiHandler{
         }
     }
 
+    static func moveImagesForFrontend(sourcePath: String, destinationPath: String, persons: [[String: Any]], completion: @escaping (String) -> Void) {
+        guard let url = URL(string: ApiHandler.moveImages) else {
+            completion("Invalid URL")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
+        // Prepare JSON body
+        let body: [String: Any] = [
+            "source_path": sourcePath,
+            "destination_path": destinationPath,
+            "persons": persons
+        ]
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [])
+        } catch {
+            completion("Failed to encode request body")
+            return
+        }
+
+        // Send request
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion("Request failed: \(error.localizedDescription)")
+                return
+            }
+
+            guard let data = data else {
+                completion("No data received")
+                return
+            }
+
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let status = json["status"] as? String,
+                   let message = json["message"] as? String {
+                    
+                    let result = (status == "success") ? message : "❌ \(message)"
+                    completion(result)
+                } else {
+                    completion("Invalid response format")
+                }
+            } catch {
+                completion("Failed to parse response")
+            }
+        }.resume()
+    }
 
 }

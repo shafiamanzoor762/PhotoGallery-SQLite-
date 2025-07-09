@@ -10,6 +10,7 @@ import Foundation
 import SQLite
 import UIKit
 
+
 class SearchHandler {
     private let dbHandler: DBHandler
     
@@ -23,40 +24,98 @@ class SearchHandler {
         genders: [String] = [],
         eventNames: [String] = [],
         eventDates: [Date] = [],
+        captureDates: [Date] = [],
+        formatedDates: [String],
         location: Locationn? = nil,
         locationNames: [String] = [],
-        dateSearchType: DateSearchType = .day
+        dateSearchType: DateFilterType
     ) -> [GalleryImage]? {
         do {
             guard let db = dbHandler.db else {
                 print("Database not connected")
                 return nil
             }
+//            print(
+//                "personNames",personNames,
+//                "age",age,
+//                "genders",genders,
+//                "event names",eventNames,
+//                "event dates",eventDates,
+//                "capture dates",captureDates,
+//                "formated dates",formatedDates,
+//                "location",location,
+//                "location names",locationNames,
+//                "search type",dateSearchType
+//            )
             
 //            let dateFormatter = ISO8601DateFormatter()
             var imageIds = Set<Int>()
             var finalImages = [GalleryImage]()
             
             // MARK: - Search by Person
-            var personQuery =  dbHandler.personTable
+//            var personQuery =  dbHandler.personTable
+//            
+//            if !personNames.isEmpty {
+//                personQuery = dbHandler.personTable.filter(personNames.contains(dbHandler.personName))
+//                print("person names")
+//            }
+//            
+//            if (!genders.isEmpty) && (genders.first != "") {
+//                    personQuery = dbHandler.personTable.filter(genders.contains(dbHandler.personGender))
+//                print("person genders")
+//                }
+//            
+//            if (age != 0) {
+//                personQuery = dbHandler.personTable.filter(dbHandler.personAge == age)
+//                print("person age")
+//            }
+//                
+//                let persons = try db.prepare(personQuery)
+//                let personIds = persons.map { $0[dbHandler.personId] }
+//
+//                print("Person IDs:", personIds)
+//            
+//                if !personIds.isEmpty {
+//                    let imagePersonQuery = dbHandler.imagePersonTable
+//                        .filter(personIds.contains(dbHandler.imagePersonPersonId))
+//                    
+//                    let imagePersonRows = try db.prepare(imagePersonQuery)
+//                    imageIds.formUnion(imagePersonRows.map { $0[dbHandler.imagePersonImageId] })
+//                }
+//            print("Images After Person",imageIds)
             
+            var personQuery: Table? = nil
+
+            // Apply filters conditionally
             if !personNames.isEmpty {
                 personQuery = dbHandler.personTable.filter(personNames.contains(dbHandler.personName))
+                print("person names")
             }
-            
-            if (!genders.isEmpty) && (genders.first != "") {
+
+            if !genders.isEmpty && genders.first != "" {
+                if let existingQuery = personQuery {
+                    personQuery = existingQuery.filter(genders.contains(dbHandler.personGender))
+                } else {
                     personQuery = dbHandler.personTable.filter(genders.contains(dbHandler.personGender))
                 }
-            
-            if (age != 0) {
-                personQuery = dbHandler.personTable.filter(dbHandler.personAge == age)
+                print("person genders")
             }
-                
-                let persons = try db.prepare(personQuery)
-                let personIds = persons.map { $0[dbHandler.personId] }
 
+            if age != 0 {
+                if let existingQuery = personQuery {
+                    personQuery = existingQuery.filter(dbHandler.personAge == age)
+                } else {
+                    personQuery = dbHandler.personTable.filter(dbHandler.personAge == age)
+                }
+                print("person age")
+            }
+
+            // Only fetch if a query was built
+            if let query = personQuery {
+                let persons = try db.prepare(query)
+                let personIds = persons.map { $0[dbHandler.personId] }
                 print("Person IDs:", personIds)
-            
+                
                 if !personIds.isEmpty {
                     let imagePersonQuery = dbHandler.imagePersonTable
                         .filter(personIds.contains(dbHandler.imagePersonPersonId))
@@ -64,6 +123,10 @@ class SearchHandler {
                     let imagePersonRows = try db.prepare(imagePersonQuery)
                     imageIds.formUnion(imagePersonRows.map { $0[dbHandler.imagePersonImageId] })
                 }
+                
+                print("Images After Person", imageIds)
+            }
+
             
             // MARK: - Search by Event
             if !eventNames.isEmpty {
@@ -80,30 +143,88 @@ class SearchHandler {
                 }
             }
             
+            print("Images After Event Names",imageIds)
+            
             // MARK: - Search by Event Date
             
             if !eventDates.isEmpty {
                 let dateStrings = eventDates.map { $0.toDatabaseString() }
-                print(dateStrings)
+                //print(dateStrings)
                 let imageQuery = dbHandler.imageTable.filter(dateStrings.contains(dbHandler.eventDate))
                 
                 let images = try db.prepare(imageQuery)
                 imageIds.formUnion(images.map { $0[dbHandler.imageId] })
             }
             
-            // MARK: - Search by Location (coordinates)
-            if let location = location {
-                let locationQuery = dbHandler.locationTable
-                    .filter(dbHandler.latitude == location.latitude && dbHandler.longitude == location.longitude)
+            print("Images After Event Dates",imageIds)
+            
+            if !captureDates.isEmpty {
+                let dateStrings = captureDates.map { $0.toDatabaseString() }
+                //print(dateStrings)
+                let imageQuery = dbHandler.imageTable.filter(dateStrings.contains(dbHandler.captureDate))
                 
-                if let locationRow = try db.pluck(locationQuery) {
-                    let locationId = locationRow[dbHandler.locationId]
-                    let imageQuery = dbHandler.imageTable.filter(dbHandler.imageLocationId == locationId)
+                let images = try db.prepare(imageQuery)
+                imageIds.formUnion(images.map { $0[dbHandler.imageId] })
+            }
+            
+            print("Images After Capture Dates",imageIds)
+            
+            if !formatedDates.isEmpty {
+                switch dateSearchType {
                     
-                    let images = try db.prepare(imageQuery)
-                    imageIds.formUnion(images.map { $0[dbHandler.imageId] })
+                case .day:
+                    let allImages = try db.prepare(dbHandler.imageTable)
+                    for row in allImages {
+                        if let dbDateStr = row[dbHandler.captureDate], // ✅ Unwrap optional string
+                           let dbDate = Date.fromDatabaseString(dbDateStr),
+                           formatedDates.contains(dbDate.toDayName()) {
+                            imageIds.insert(row[dbHandler.imageId])
+                        }
+                    }
+
+                case .month:
+                    let allImages = try db.prepare(dbHandler.imageTable)
+                    for row in allImages {
+                        if let dbDateStr = row[dbHandler.captureDate],
+                           let dbDate = Date.fromDatabaseString(dbDateStr),
+                           formatedDates.contains(dbDate.toMonthName()) {
+                            imageIds.insert(row[dbHandler.imageId])
+                        }
+                    }
+
+                case .year:
+                    let allImages = try db.prepare(dbHandler.imageTable)
+                    for row in allImages {
+                        if let dbDateStr = row[dbHandler.captureDate],
+                           let dbDate = Date.fromDatabaseString(dbDateStr),
+                           formatedDates.contains(dbDate.toYearString()) {
+                            imageIds.insert(row[dbHandler.imageId])
+                        }
+                    }
+
+                case .complete:
+                    let query = dbHandler.imageTable.filter(formatedDates.contains(dbHandler.captureDate))
+                    let rows = try db.prepare(query)
+                    imageIds.formUnion(rows.map { $0[dbHandler.imageId] })
                 }
             }
+            
+            print("Images After Formated Capture Dates",imageIds)
+
+            
+            // MARK: - Search by Location (coordinates)
+//            if let location = location {
+//                let locationQuery = dbHandler.locationTable
+//                    .filter(dbHandler.latitude == location.latitude && dbHandler.longitude == location.longitude)
+//                
+//                if let locationRow = try db.pluck(locationQuery) {
+//                    let locationId = locationRow[dbHandler.locationId]
+//                    let imageQuery = dbHandler.imageTable.filter(dbHandler.imageLocationId == locationId)
+//                    
+//                    let images = try db.prepare(imageQuery)
+//                    imageIds.formUnion(images.map { $0[dbHandler.imageId] })
+//                }
+//            }
             
             // MARK: - Search by Location Names
             if !locationNames.isEmpty {
@@ -121,6 +242,8 @@ class SearchHandler {
                     imageIds.formUnion(images.map { $0[dbHandler.imageId] })
                 }
             }
+            
+            print("Images After Location",imageIds)
             
             // MARK: - Get Only Image IDs and Paths
                     if !imageIds.isEmpty {
@@ -155,7 +278,7 @@ class SearchHandler {
         eventDates: [Date] = [],
         location: Locationn? = nil,
         locationNames: [String] = [],
-        dateSearchType: DateSearchType = .day
+//        dateSearchType: DateSearchType = .day
     ) -> [GalleryImage]? {
         do {
             guard let db = dbHandler.db else {
@@ -273,12 +396,6 @@ class SearchHandler {
         }
     }
 
-
-    enum DateSearchType {
-        case day
-        case month
-        case year
-    }
         
     func getNameSuggestions(for searchTerm: String) -> [String] {
         do {

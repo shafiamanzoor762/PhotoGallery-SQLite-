@@ -1,10 +1,27 @@
+//
+//  PersonsGroupView.swift
+//  photoGallery
+//
+//  Created by apple on 09/07/2025.
+//
 
 import SwiftUI
 
-struct PersonView: View {
+
+struct PersonsGroupView: View {
+    
+    @State var showTooltip: Bool = false
+    @State var selectedPersons: [Personn] = []
+    @State var selectedPersonId: Int? = nil
+    @State var personGroups: [PersonGroup] = []
+    @State var selectedImages: Set<Int> = []
+    
+    @State var showMoveImagesPopup = false
+    @State var moveImagesData = MoveImageData()
+    
+    //
     @State private var selectedIndex: Int? = nil
     @EnvironmentObject var navManager: NavManager
-    @StateObject var viewModel = PersonViewModel()
     
     @State private var draggedPerson: Personn? = nil
     @State private var targetPerson: Personn? = nil
@@ -17,6 +34,9 @@ struct PersonView: View {
     @State private var showShareSheet = false
 
 
+    
+    @StateObject var viewModel = PersonViewModel()
+    
     private var gridColumns: [GridItem] {
         [
             GridItem(.flexible()),
@@ -29,15 +49,13 @@ struct PersonView: View {
         ZStack {
             
             Group {
-                if viewModel.isLoading {
-                    ProgressView()
-                        .scaleEffect(1.5)
-                } else if viewModel.error != nil {
-                    errorView
-                } else {
+                if personGroups.count > 0 {
                     mainContentView
                     popupView
                     
+                }
+                else{
+                    Text("No images to display")
                 }
             }
 //            mainContentView
@@ -46,25 +64,17 @@ struct PersonView: View {
         .sheet(isPresented: $showShareSheet) {
             if let personGroup = selectedPersonGroup {
                 ShareViewHelper(
-                    images: ShareHelper.getSelectedGalleryImages(from: personGroup.images, selectedIDs: viewModel.selectedImages),
+                    images: ShareHelper.getSelectedGalleryImages(from: personGroup.images, selectedIDs: selectedImages),
                 )
             }
         }
-        .sheet(isPresented: $viewModel.showMoveImagesPopup) {
+        .sheet(isPresented: $showMoveImagesPopup) {
             movePopupView
         }
         .onAppear {
-            viewModel.fetchData()
-            print("data Fetched", viewModel.personGroups)
-            viewModel.selectedImages.removeAll()
+            print("data Fetched", personGroups)
+            selectedImages.removeAll()
             isSelectionModeActive = false
-        }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: viewModel.refresh) {
-                    Image(systemName: "arrow.clockwise")
-                }
-            }
         }
     }
 
@@ -73,7 +83,7 @@ struct PersonView: View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: gridColumns, spacing: 20) {
-                    ForEach(viewModel.personGroups, id: \.person.id) { group in
+                    ForEach(personGroups, id: \.person.id) { group in
                         personGroupView(group: group)
                     }
                 }
@@ -91,18 +101,18 @@ struct PersonView: View {
                 ZStack {
                     SelectionToolbar(
                         isSelectionModeActive: $isSelectionModeActive,
-                        selectedItems: $viewModel.selectedImages,
+                        selectedItems: $selectedImages,
                         mode: .moveAndShare,
                         onMove: {
-                            if viewModel.selectedImages.count > 0 {
+                            if selectedImages.count > 0 {
                                 selectedPersonGroup = group
-                                viewModel.showMoveImagesPopup = true
+                                showMoveImagesPopup = true
                                 
                             }
                         },
                         onShare: {
-                            print("Selected Images ------>>>>>>>>",viewModel.selectedImages.count)
-                            if viewModel.selectedImages.count > 0 {
+                            print("Selected Images ------>>>>>>>>",selectedImages.count)
+                            if selectedImages.count > 0 {
                                 
                                 selectedPersonGroup = group
                                 showShareSheet = true
@@ -114,7 +124,7 @@ struct PersonView: View {
                         screenName: group.person.name,
                         images: group.images,
                         isSelectionModeActive: $isSelectionModeActive,
-                        selectedImageIDs: $viewModel.selectedImages,
+                        selectedImageIDs: $selectedImages,
                         person: group.person
                     )
                 }
@@ -240,7 +250,7 @@ struct PersonView: View {
         
         ScrollView {
                 LazyVGrid(columns: gridColumns, spacing: 20) {
-                    ForEach(viewModel.personGroups, id: \.person.id) { group in
+                    ForEach(personGroups, id: \.person.id) { group in
                         CardView(
                             title: group.person.name,
                             content: "\(group.images.count)",
@@ -251,7 +261,7 @@ struct PersonView: View {
                         .onTapGesture {
                             if let selectedGroup =  selectedPersonGroup {
                                 viewModel.moveImages(destination: group.person.path, personGroup: selectedGroup)
-                                viewModel.showMoveImagesPopup = false
+                                showMoveImagesPopup = false
                             }
                         }
                     }
@@ -261,78 +271,10 @@ struct PersonView: View {
         }
         .transition(.opacity)
     }
-    
-    private var errorView: some View {
-        VStack {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.largeTitle)
-                .foregroundColor(.red)
-            Text("Error loading people")
-                .font(.title2)
-            Text(viewModel.error?.localizedDescription ?? "Unknown error")
-                .font(.subheadline)
-                .multilineTextAlignment(.center)
-                .padding()
-            
-            Button("Retry") {
-                viewModel.fetchData()
-            }
-            .buttonStyle(.borderedProminent)
-            .padding()
-        }
-    }
 }
 
 
-struct DraggableCardView: View {
-    var content: String
-    let person: Personn
-    @Binding var draggedPerson: Personn?
-    @Binding var targetPerson: Personn?
-    @Binding var showPopup: Bool
-    var onTap: () -> Void
 
-    var body: some View {
-        CardView(
-            title: person.name,
-            content: content,
-            imagePath: person.path
-        )
-        .padding(.top, -10)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onTap()
-        }
-        .onDrag {
-            // Only set the dragged person when dragging starts
-            self.draggedPerson = person
-            return NSItemProvider(object: NSString(string: String(person.id)))
-        }
-        .onDrop(of: [.text], delegate: DropViewDelegate(
-            currentPerson: person,
-            draggedPerson: $draggedPerson,
-            targetPerson: $targetPerson,
-            showPopup: $showPopup
-        ))
-    }
-}
-
-struct DropViewDelegate: DropDelegate {
-    let currentPerson: Personn  // This is the drop target
-    @Binding var draggedPerson: Personn?
-    @Binding var targetPerson: Personn?
-    @Binding var showPopup: Bool
-
-    func performDrop(info: DropInfo) -> Bool {
-        guard let dragged = draggedPerson else { return false }
-        
-        // Only proceed if dragging a different person onto this one
-        if dragged.id != currentPerson.id {
-            targetPerson = currentPerson  // Set the drop target
-            showPopup = true
-            return true
-        }
-        return false
-    }
-    
-}
+//#Preview {
+//    PersonsGroupView()
+//}
