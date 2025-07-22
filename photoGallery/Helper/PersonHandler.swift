@@ -136,6 +136,90 @@ class PersonHandler {
         
         return result
     }
+    
+    
+//    Persons Group With Unknown folder
+    
+//    func parsePersonGroups(from data: Data) throws -> [PersonGroup] {
+//        guard let db = dbHandler.db else {
+//            throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not initialized"])
+//        }
+//
+//        guard let jsonArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+//            return []
+//        }
+//
+//        var result = [PersonGroup]()
+//        var unknownImages = [GalleryImage]()
+//        var unknownImageIDs = Set<Int>()  // ✅ Track unique image IDs
+//        var firstUnknownPersonInfo: (path: String, dob: Date?, age: Int?)?
+//
+//        for groupDict in jsonArray {
+//            guard let personDict = groupDict["Person"] as? [String: Any],
+//                  let personId = personDict["id"] as? Int,
+//                  let personName = personDict["name"] as? String?,
+//                  let personPath = personDict["path"] as? String,
+//                  let personDob = Date.fromDatabaseString(personDict["dob"] as! String == "" ? Date().toDatabaseString() : personDict["dob"] as! String),
+//                  let personAge = personDict["age"] as? Int,
+//                  let personGender = personDict["gender"] as? String,
+//                  let imagesArray = groupDict["Images"] as? [[String: Any]] else {
+//                continue
+//            }
+//
+//            let images = imagesArray.compactMap { imageDict -> GalleryImage? in
+//                guard let imageIdValue = imageDict["id"] as? Int else { return nil }
+//                let query = dbHandler.imageTable.filter(dbHandler.imageId == SQLite.Expression<Int>(value: imageIdValue))
+//                guard let imageRecord = try? db.pluck(query) else { return nil }
+//
+//                return GalleryImage(
+//                    id: imageIdValue,
+//                    path: imageRecord[dbHandler.imagePath]
+//                )
+//            }
+//
+//            let nameTrimmed = personName?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+//
+//            if nameTrimmed == nil || nameTrimmed == "" || nameTrimmed == "unknown" {
+//                for img in images {
+//                    if !unknownImageIDs.contains(img.id) {
+//                        unknownImages.append(img)
+//                        unknownImageIDs.insert(img.id)
+//                    }
+//                }
+//
+//                if firstUnknownPersonInfo == nil {
+//                    firstUnknownPersonInfo = (path: personPath, dob: personDob, age: personAge)
+//                }
+//            } else {
+//                let person = Personn(
+//                    id: personId,
+//                    name: personName!,
+//                    gender: personGender,
+//                    path: personPath,
+//                    dob: personDob,
+//                    age: personAge
+//                )
+//                result.append(PersonGroup(person: person, images: images))
+//            }
+//        }
+//
+//        if !unknownImages.isEmpty {
+//            let unknownPerson = Personn(
+//                id: 0,
+//                name: "Unknown",
+//                gender: "Unknown",
+//                path: firstUnknownPersonInfo?.path ?? "",
+//                dob: firstUnknownPersonInfo?.dob,
+//                age: firstUnknownPersonInfo?.age
+//            )
+//            result.insert(PersonGroup(person: unknownPerson, images: unknownImages), at: 0)
+//        }
+//
+//        return result
+//    }
+
+
+
 
     func insertLink(person1Id: Int, person2Id: Int) throws -> [String: Any] {
             guard let db = dbHandler.db else {

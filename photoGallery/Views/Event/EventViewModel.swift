@@ -44,6 +44,14 @@ class EventViewModel: ObservableObject {
         }
     }
     
+    var sortedGroupedEventKeys: [String] {
+        groupedImages.keys.sorted {
+            if $0 == "No Event" { return true }
+            if $1 == "No Event" { return false }
+            return $0 < $1
+        }
+    }
+    
     // Helper to get the first image path for a group
     func firstImagePath(for key: String) -> String? {
         return groupedImages[key]?.first?.fullPath

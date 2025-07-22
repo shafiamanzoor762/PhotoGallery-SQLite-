@@ -66,9 +66,67 @@ class EventHandler {
     }
     
     
+    // With No Event Folder
     
+//    func groupImagesByEventName() -> [String: [GalleryImage]]? {
+//        do {
+//            guard let db = dbHandler.db else {
+//                print("Database not connected")
+//                return nil
+//            }
+//
+//            var result = [String: [GalleryImage]]()
+//
+//            let query = dbHandler.imageTable
+//                .filter(dbHandler.isDeleted == false || dbHandler.isDeleted == nil)
+//                .join(.leftOuter, dbHandler.imageEventTable,
+//                      on: dbHandler.imageTable[dbHandler.imageId] == dbHandler.imageEventTable[dbHandler.imageEventImageId])
+//                .join(.leftOuter, dbHandler.eventTable,
+//                      on: dbHandler.imageEventTable[dbHandler.imageEventEventId] == dbHandler.eventTable[dbHandler.eventId])
+//                .select(
+//                    dbHandler.imageTable[dbHandler.imageId],
+//                    dbHandler.imageTable[dbHandler.imagePath],
+//                    dbHandler.eventTable[dbHandler.eventName]
+//                )
+//
+//            for imageRow in try db.prepare(query) {
+//                let rawEventName = imageRow[dbHandler.eventTable[dbHandler.eventName]]
+//                let eventName = rawEventName?.trimmingCharacters(in: .whitespacesAndNewlines)
+//                let key = (eventName == nil || eventName!.isEmpty) ? "No Event" : eventName!
+//
+//                let galleryImage = GalleryImage(
+//                    id: imageRow[dbHandler.imageTable[dbHandler.imageId]],
+//                    path: imageRow[dbHandler.imageTable[dbHandler.imagePath]]
+//                )
+//
+//                if result[key] == nil {
+//                    result[key] = [galleryImage]
+//                } else {
+//                    result[key]?.append(galleryImage)
+//                }
+//            }
+//
+//            return result.isEmpty ? nil : result
+//
+//        } catch {
+//            print("Error grouping images by event name: \(error)")
+//            return nil
+//        }
+//    }
     
+  
+//    To keep event at first
     
+//    let grouped = groupImagesByEventName()
+//    let sortedKeys = grouped?.keys.sorted {
+//        if $0 == "No Event" { return true }
+//        if $1 == "No Event" { return false }
+//        return $0 < $1
+//    }
+    
+
+
+
     // MARK: - Group by Event Date
     
     func groupImagesByEventDate() -> [String: [GalleryImage]]? {
@@ -116,43 +174,50 @@ class EventHandler {
         }
     }
     
-    //    func addEventIfNotExists(eventName: String, completion: @escaping (Swift.Result<Eventt, Error>) -> Void) {
-    //        do {
-    //            guard let db = dbHandler.db else {
-    //                completion(.failure(NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Database not connected"])))
-    //                return
-    //            }
-    //
-    //            // 1. Check if event already exists (case-insensitive comparison)
-    //            let existingEventQuery = dbHandler.eventTable
-    //                .filter(dbHandler.eventName.lowercaseString == eventName.lowercased())
-    //                .limit(1)
-    //
-    //            if try db.pluck(existingEventQuery) != nil {
-    //                completion(.failure(NSError(domain: "EventError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Event already exists"])))
-    //                return
-    //            }
-    //
-    //            // 2. Get the next available ID
-    //            let maxId = try db.scalar(dbHandler.eventTable.select(dbHandler.eventId.max)) ?? 0
-    //            let newId = maxId + 1
-    //
-    //            // 3. Insert new event
-    //            let insert = dbHandler.eventTable.insert(
-    //                dbHandler.eventId <- newId,
-    //                dbHandler.eventName <- eventName
-    //            )
-    //
-    //            try db.run(insert)
-    //
-    //            // 4. Return the new event
-    //            let newEvent = Eventt(id: newId, name: eventName)
-    //            completion(.success(newEvent))
-    //
-    //        } catch {
-    //            completion(.failure(error))
-    //        }
-    //    }
+    // With No Event Date Folder
+    
+//    func groupImagesByEventDate() -> [String: [GalleryImage]]? {
+//        do {
+//            guard let db = dbHandler.db else {
+//                print("Database not connected")
+//                return nil
+//            }
+//
+//            var result = [String: [GalleryImage]]()
+//
+//            // Fetch all images (including those with nil/empty event_date)
+//            let imageQuery = dbHandler.imageTable
+//                .filter(dbHandler.isDeleted == false || dbHandler.isDeleted == nil)
+//                .select(dbHandler.imageId,
+//                        dbHandler.imagePath,
+//                        dbHandler.eventDate)
+//
+//            for imageRow in try db.prepare(imageQuery) {
+//                let rawDate = imageRow[dbHandler.eventDate]
+//                let eventDateStr = rawDate?.trimmingCharacters(in: .whitespacesAndNewlines)
+//
+//                let key = (eventDateStr == nil || eventDateStr!.isEmpty) ? "No Event Date" : eventDateStr!
+//
+//                let galleryImage = GalleryImage(
+//                    id: imageRow[dbHandler.imageId],
+//                    path: imageRow[dbHandler.imagePath]
+//                )
+//
+//                if result[key] == nil {
+//                    result[key] = [galleryImage]
+//                } else {
+//                    result[key]?.append(galleryImage)
+//                }
+//            }
+//
+//            return result.isEmpty ? nil : result
+//
+//        } catch {
+//            print("Error grouping images by event date: \(error)")
+//            return nil
+//        }
+//    }
+
     
     
     public func addEventIfNotExists(eventName: String, completion: @escaping (Swift.Result<Eventt, Error>) -> Void) -> Eventt? {

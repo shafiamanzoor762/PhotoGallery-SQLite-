@@ -76,6 +76,10 @@ struct Cover2: View {
                 if tabViewName == "Trash Images" {
                     TrashView()
                 }
+                
+//                if tabViewName == "PeopleBirthdayTaskView" {
+//                    PeopleBirthdayTaskView()
+//                }
             }
             //.padding(.top)
         }

@@ -30,7 +30,8 @@ struct BottomNavBar: View {
                     Cover(viewName: "Label")
 //                    UndoChangesView()
                 } else if selectedIndex == 1 {
-                    Cover(viewName: "People")
+//                    Cover(viewName: "People")
+                    Cover(viewName: "Table of Contents")
                 } else if selectedIndex == 2 {
                     Cover(viewName: "Location")
                 } else if selectedIndex == 3 {

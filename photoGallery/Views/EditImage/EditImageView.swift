@@ -47,6 +47,9 @@ struct EditImageView: View {
                     genderSection
                     Divider().background(.white)
                     
+                    //DoB Section
+                    dobSection
+                    Divider().background(.white)
                     // Event Section
                     eventSection
                     Divider().background(.white)
@@ -219,6 +222,33 @@ struct EditImageView: View {
                 text: "Female",
                 foregroundColor: .white
             )
+        }
+    }
+    
+    private var dobSection: some View {
+        HStack {
+            Text("DOB")
+                .font(.headline)
+                .foregroundColor(.white)
+            Spacer()
+            
+            
+            HStack {
+                DatePicker(
+                    "",
+                    selection: Binding(
+                        get: { viewModel.image.persons[0].dob ?? Date() },
+                        set: { viewModel.image.persons[0].dob = $0 }
+                    ),
+                    displayedComponents: .date
+                )
+                .labelsHidden()
+                .datePickerStyle(.compact)
+                .frame(width: 100, height: 20)
+                .transformEffect(.init(scaleX: 0.6, y: 0.6)) // Scale down
+                //.padding(.leading,5)
+            }
+            .padding(.leading,10)
         }
     }
     

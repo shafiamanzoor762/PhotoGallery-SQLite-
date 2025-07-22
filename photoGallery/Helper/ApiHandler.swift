@@ -23,10 +23,10 @@ struct ImageeDetailData {
     var links: [[String: [String]]]
 }
 
-class ApiHandler{
+class ApiHandler {
     
 //    Hp
-    public static let baseUrl = "http://192.168.1.5:5000/"
+    public static let baseUrl = "http://192.168.1.3:5000/"
     
 //    Mobile HotSpot
 //    public static let baseUrl = "http://192.168.153.208:5000/"
@@ -121,7 +121,7 @@ class ApiHandler{
         }
     }
 
-    // For backward compatibility (if you need to support completion handlers)
+    // For backward compatibility
     public static func extractFacesViaApi(from image: UIImage, completion: @escaping ([String]) -> Void) {
         Task {
             let faces = await extractFacesViaApi(from: image)
@@ -399,7 +399,7 @@ class ApiHandler{
             } catch {
                 completion(.failure(error))
                 return
-            }
+            } 
             
             // Debug print
             //print("Sending request to \(endpoint) with body: \(requestBody)")
@@ -462,44 +462,6 @@ class ApiHandler{
         
         return links
     }
-
-//    static func processLinks(from rawJson: [String: Any]) throws {
-//        print(rawJson)
-//        guard let links = rawJson["links"] as? [String: [String]] else {
-//            throw NSError(domain: "DataError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid links format"])
-//        }
-//        
-//        var ph = PersonHandler()
-//        
-//        for (path1, linkedPaths) in links {
-//            // Find first person by path (skip if not found)
-//            guard let person1 = try ph.findPerson(byPath: path1) else {
-//                print("⚠️ Person not found with path: \(path1)")
-//                continue
-//            }
-//            
-//            // Process all linked paths
-//            for path2 in linkedPaths {
-//                // Find second person by path (skip if not found)
-//                guard let person2 = try ph.findPerson(byPath: path2) else {
-//                    print("⚠️ Person not found with path: \(path2)")
-//                    continue
-//                }
-//                
-//                // Create link if it doesn't exist
-//                do {
-//                    let result = try ph.insertLink(person1Id: person1.id, person2Id: person2.id)
-//                    if let error = result["error"] as? String {
-//                        print("ℹ️ \(error) between \(person1.id) and \(person2.id)")
-//                    } else {
-//                        print("✅ Created link between \(person1.id) and \(person2.id)")
-//                    }
-//                } catch {
-//                    print("⛔ Failed to create link: \(error.localizedDescription)")
-//                }
-//            }
-//        }
-//    }
     
     static func processLinks(from linksArray: [[String: [String]]]) throws {
         var ph = PersonHandler()
@@ -573,6 +535,7 @@ class ApiHandler{
                 // Persons linked to this image
                 var persons: [[String: Any]] = []
                 var links: [String: [String]] = [:]
+                
                 let personQuery = dbHandler.imagePersonTable
                     .join(dbHandler.personTable, on: dbHandler.imagePersonPersonId == dbHandler.personId)
                     .filter(dbHandler.imagePersonImageId == imageIdValue)

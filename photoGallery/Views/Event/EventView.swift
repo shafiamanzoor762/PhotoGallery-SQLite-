@@ -84,11 +84,8 @@ struct EventView: View {
                                     Pictures1View(
                                         screenName: key, images: images, isSelectionModeActive: $isSelectionModeActive, selectedImageIDs: $viewModel.selectedImages
                                     )
+//                                    FilteredResultsView(initialResults: images)
                                 }
-//                                PicturesView(
-//                                    screenName: bindingKey.wrappedValue,  // or viewModel.eventName(for: key) if you need formatting
-//                                    images: images
-//                                )
                             }
                         } label: {
                             CardSquare(
@@ -105,6 +102,58 @@ struct EventView: View {
                         .buttonStyle(PlainButtonStyle())
                     }
                 }
+       
+//                MARK: - With No Events Folder At First
+                
+//                ForEach(viewModel.sortedGroupedEventKeys, id: \.self) { key in
+//                    let bindingKey = Binding<String>(
+//                        get: { key },
+//                        set: { _ in }
+//                    )
+//
+//                    if let firstImagePath = viewModel.firstImagePath(for: bindingKey.wrappedValue) {
+//                        NavigationLink(
+//                            tag: bindingKey.wrappedValue,
+//                            selection: $selectedEventKey
+//                        ) {
+//                            if let images = viewModel.groupedImages[bindingKey.wrappedValue] {
+//                                ZStack {
+//                                    SelectionToolbar(
+//                                        isSelectionModeActive: $isSelectionModeActive,
+//                                        selectedItems: $viewModel.selectedImages,
+//                                        mode: .shareOnly,
+//                                        onShare: {
+//                                            if !viewModel.selectedImages.isEmpty {
+//                                                selectedGalleryImages = images
+//                                                showShareSheet = true
+//                                            }
+//                                        }
+//                                    )
+//                                    .zIndex(1)
+//                                    Pictures1View(
+//                                        screenName: key,
+//                                        images: images,
+//                                        isSelectionModeActive: $isSelectionModeActive,
+//                                        selectedImageIDs: $viewModel.selectedImages
+//                                    )
+//                                }
+//                            }
+//                        } label: {
+//                            CardSquare(
+//                                title: bindingKey.wrappedValue,
+//                                count: "\(viewModel.groupedImages[bindingKey.wrappedValue]?.count ?? 0)",
+//                                imageURL: firstImagePath
+//                            )
+//                            .padding(.top, -10)
+//                            .contentShape(Rectangle())
+//                            .onTapGesture {
+//                                selectedEventKey = bindingKey.wrappedValue
+//                            }
+//                        }
+//                        .buttonStyle(PlainButtonStyle())
+//                    }
+//                }
+
             }
             .padding()
         }

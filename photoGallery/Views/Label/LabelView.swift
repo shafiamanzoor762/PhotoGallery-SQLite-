@@ -403,15 +403,30 @@ struct ImageCell: View {
         }
     }
     
+//    private func loadImage() {
+//        let fileURL = URL(fileURLWithPath: image.fullPath)
+//        DispatchQueue.global(qos: .userInitiated).async {
+//            let loadedImage = UIImage(contentsOfFile: fileURL.path)
+//            DispatchQueue.main.async {
+//                uiImage = loadedImage
+//            }
+//        }
+//    }
+    
     private func loadImage() {
         let fileURL = URL(fileURLWithPath: image.fullPath)
+        print("Attempting to load image at path: \(fileURL.path)")
         DispatchQueue.global(qos: .userInitiated).async {
-            let loadedImage = UIImage(contentsOfFile: fileURL.path)
+            let loaded = UIImage(contentsOfFile: fileURL.path)
             DispatchQueue.main.async {
-                uiImage = loadedImage
+                if loaded == nil {
+                    print("⚠️ Failed to load image at path: \(fileURL.path)")
+                }
+                self.uiImage = loaded
             }
         }
     }
+
 }
 
 

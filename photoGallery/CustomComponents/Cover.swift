@@ -24,7 +24,8 @@ struct Cover: View {
     var emojiForView: String {
             switch viewName {
             case "Label": return "🏷️"
-            case "People": return "👤"
+            case "Table of Contents": return "☰"
+            //case "People": return "👤"
             case "Location": return "📍"
             case "Event": return "🎉"
             case "Date": return "📅"
@@ -144,6 +145,10 @@ struct Cover: View {
             Button(action: trashAction) {
                 Label("Trash Images", systemImage: "trash.fill")
             }
+            
+//            Button(action: PeopleBirthdayTaskViewAction) {
+//                Label("PeopleBirthdayTaskView", systemImage: "line.3.horizontal.decrease.circle.fill")
+//            }
         }
     }
     
@@ -166,8 +171,10 @@ struct Cover: View {
         switch viewName {
         case "Label":
             return AnyView(LabelView())
-        case "People":
-            return AnyView(PersonView())
+//        case "People":
+        case "Table of Contents":
+//            return AnyView(PersonView())
+              return AnyView(PeopleBirthdayTaskView())
         case "Location":
             return AnyView(LocationView())
         case "Event":
@@ -278,6 +285,12 @@ struct Cover: View {
         navBarState.isHidden = true
         dismiss()
     }
+    
+//    private func PeopleBirthdayTaskViewAction() {
+//        path.append("People Birthday Task View")
+//        navBarState.isHidden = true
+//        dismiss()
+//    }
     
     
     // MARK: - Image Handling

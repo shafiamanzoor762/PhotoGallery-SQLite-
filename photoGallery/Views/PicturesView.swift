@@ -8,11 +8,9 @@
 import SwiftUI
 
 struct PicturesView: View {
-//    init() {
-//            print("PicturesView loaded")
-//        }
     
     @State var screenName: String = "Alina"
+    @State var person: Personn? = nil
     
     let columns = [
             GridItem(.flexible()),
@@ -30,11 +28,27 @@ struct PicturesView: View {
     
     var body: some View {
             ScrollView {
+                
+                if (person != nil) {
+                    VStack(alignment:.center) {
+                        PersonCircleImageView(imagePath: person!.path, size: 60)
+                        if person?.name.lowercased() == "unknown" {
+                            
+                            Image(systemName: "questionmark.circle.fill")
+                                .font(.system(size: 15))
+                                .foregroundStyle(.blue)
+                                .background(Color.white)
+                                .clipShape(Circle())
+                                .offset(x: 20, y: -12)
+                        }
+                        Text(person!.name).bold().foregroundStyle(.darkPurple)
+                    }
+                }
+                
                 VStack(alignment: .leading, spacing: 20) {
                     
                     LazyVGrid(columns: columns, spacing: 20) {
                         ForEach(images) { img in
-                            
                             
                             NavigationLink(destination: PictureView(image: im.getImageDetails(imageId: img.id)!, screenName: screenName)) {
                                 ImageView(imagePath: img.fullPath)

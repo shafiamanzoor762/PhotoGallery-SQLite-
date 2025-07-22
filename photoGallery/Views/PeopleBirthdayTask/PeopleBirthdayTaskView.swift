@@ -1,10 +1,12 @@
 
 import SwiftUI
 
-struct PersonView: View {
+struct PeopleBirthdayTaskView: View {
     @State private var selectedIndex: Int? = nil
     @EnvironmentObject var navManager: NavManager
-    @StateObject var viewModel = PersonViewModel()
+    @StateObject var viewModel = PersonBirthdayTaskViewModel()
+    
+    
     
     @State private var draggedPerson: Personn? = nil
     @State private var targetPerson: Personn? = nil
@@ -15,6 +17,11 @@ struct PersonView: View {
     @State private var isSelectionModeActive = false
 
     @State private var showShareSheet = false
+    @State var images: [GalleryImage]? = nil
+    
+    //new
+    @State var selectedPerson: Personn? = nil
+    
 
 
     private var gridColumns: [GridItem] {
@@ -27,6 +34,7 @@ struct PersonView: View {
 
     var body: some View {
         ZStack {
+            //
             
             Group {
                 if viewModel.isLoading {
@@ -40,9 +48,8 @@ struct PersonView: View {
                     
                 }
             }
-//            mainContentView
-//            popupView
         }
+        
         .sheet(isPresented: $showShareSheet) {
             if let personGroup = selectedPersonGroup {
                 ShareViewHelper(
@@ -71,14 +78,110 @@ struct PersonView: View {
     //MARK: - Main content view
     private var mainContentView: some View {
         NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: gridColumns, spacing: 20) {
-                    ForEach(viewModel.personGroups, id: \.person.id) { group in
-                        personGroupView(group: group)
+            VStack{
+                HStack {
+                    Text("Select Person Name")
+                        .font(.headline)
+                    Picker("Select Person name", selection: $viewModel.selectedPersonName) {
+                        ForEach(viewModel.personNames, id: \.self) {
+                            Text($0)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
+                    .padding(.horizontal).foregroundStyle(Color.darkPurple)
+                    .onChange(of: viewModel.selectedPersonName){
+                        viewModel.getPersonGroupsByAge()
                     }
                 }
-                .padding(.top)
-                .padding(.bottom,100)
+
+                
+                if(!viewModel.selectedPersonName.isEmpty){
+                    
+                    ScrollView {
+                        
+                        VStack(alignment: .leading){
+                            
+                            Text("Age variations for \(viewModel.selectedPersonName)")
+                                    .font(.headline)
+                                    .foregroundStyle(Defs.seeGreenColor)
+                                
+                                ForEach(viewModel.ageVariations.keys.sorted(), id:\.self){ key in
+                                    let bindingKey = Binding<String>(
+                                        get: { key },
+                                        set: { _ in }
+                                    )
+                                    if let img = viewModel.ageVariations[bindingKey.wrappedValue] {
+                                        
+                                        NavigationLink(destination: PicturesView(screenName: viewModel.selectedPersonName, person: viewModel.selectedPerson, images:  img)) {
+                                            HStack {
+                                                Image(systemName: "person.circle")
+                                                    .font(.largeTitle)
+                                                    .foregroundStyle(Defs.lightPink)
+                                                Text("\(key)")
+                                                    .foregroundStyle(.black)
+                                                    .font(.headline)
+                                                
+                                                Spacer()
+                                                
+                                                Image(systemName: "chevron.forward.circle.fill")
+                                                    .font(.largeTitle)
+                                                    .foregroundStyle(Defs.seeGreenColor)
+                                            }
+                                            .padding()
+                                            .background(Defs.lightSeeGreenColor.opacity(0.5))
+                                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                                            
+                                        }
+                                    }
+                                    
+                                }
+                                
+                                
+                                //Event Age Variations
+                                
+                                Text("Event age variations for \(viewModel.selectedPersonName)")
+                                    .font(.headline)
+                                    .foregroundStyle(Defs.seeGreenColor)
+                            ForEach(viewModel.eventAgeVariations.keys.sorted(), id:\.self){ key in
+                                let bindingKey = Binding<String>(
+                                    get: { key },
+                                    set: { _ in }
+                                )
+                                
+                                if let img = viewModel.eventAgeVariations[bindingKey.wrappedValue] {
+                                    
+                                    NavigationLink(destination: PicturesView(screenName: viewModel.selectedPersonName, person: viewModel.selectedPerson, images:  img)) {
+                                        HStack {
+                                            Image(systemName: "party.popper.fill")
+                                                .font(.largeTitle)
+                                                .foregroundStyle(Defs.lightPink)
+                                            Text("\(key)")
+                                                .foregroundStyle(.black)
+                                                .font(.headline)
+                                            
+                                            Spacer()
+                                            
+                                            Image(systemName: "chevron.forward.circle.fill")
+                                                .font(.largeTitle)
+                                                .foregroundStyle(Defs.seeGreenColor)
+                                        }
+                                        .padding()
+                                        .background(Defs.lightSeeGreenColor.opacity(0.4))
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    }
+                                }
+                            }
+                        }
+                        
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom,110)
+                } else {
+                    Text("No person name selected yet. Please select person name.")
+                        .font(.headline)
+
+                }
+                Spacer()
             }
         }
     }
@@ -284,56 +387,3 @@ struct PersonView: View {
     }
 }
 
-
-struct DraggableCardView: View {
-    var content: String
-    let person: Personn
-    @Binding var draggedPerson: Personn?
-    @Binding var targetPerson: Personn?
-    @Binding var showPopup: Bool
-    var onTap: () -> Void
-
-    var body: some View {
-        CardView(
-            title: person.name,
-            content: content,
-            imagePath: person.path
-        )
-        .padding(.top, -10)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onTap()
-        }
-        .onDrag {
-            // Only set the dragged person when dragging starts
-            self.draggedPerson = person
-            return NSItemProvider(object: NSString(string: String(person.id)))
-        }
-        .onDrop(of: [.text], delegate: DropViewDelegate(
-            currentPerson: person,
-            draggedPerson: $draggedPerson,
-            targetPerson: $targetPerson,
-            showPopup: $showPopup
-        ))
-    }
-}
-
-struct DropViewDelegate: DropDelegate {
-    let currentPerson: Personn  // This is the drop target
-    @Binding var draggedPerson: Personn?
-    @Binding var targetPerson: Personn?
-    @Binding var showPopup: Bool
-
-    func performDrop(info: DropInfo) -> Bool {
-        guard let dragged = draggedPerson else { return false }
-        
-        // Only proceed if dragging a different person onto this one
-        if dragged.id != currentPerson.id {
-            targetPerson = currentPerson  // Set the drop target
-            showPopup = true
-            return true
-        }
-        return false
-    }
-    
-}

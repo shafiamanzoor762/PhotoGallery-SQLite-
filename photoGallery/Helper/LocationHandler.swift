@@ -63,5 +63,49 @@ init(dbHandler: DBHandler) {
             return nil
         }
     }
+    
+//    func groupImagesByLocation() -> [String: [GalleryImage]]? {
+//        do {
+//            guard let db = dbHandler.db else {
+//                print("Database not connected")
+//                return nil
+//            }
+//            
+//            var result = [String: [GalleryImage]]()
+//            
+//            // Query all images with their (optional) location names
+//            let imageQuery = dbHandler.imageTable
+//                .filter(dbHandler.isDeleted == false || dbHandler.isDeleted == nil)
+//                .join(.leftOuter, dbHandler.locationTable,
+//                      on: dbHandler.imageTable[dbHandler.imageLocationId] == dbHandler.locationTable[dbHandler.locationId])
+//                .select(dbHandler.imageTable[dbHandler.imageId],
+//                        dbHandler.imageTable[dbHandler.imagePath],
+//                        dbHandler.locationTable[dbHandler.locationName])
+//            
+//            for imageRow in try db.prepare(imageQuery) {
+//                let rawLocation = imageRow[dbHandler.locationTable[dbHandler.locationName]]
+//                let locationName = rawLocation?.trimmingCharacters(in: .whitespacesAndNewlines)
+//                let key = (locationName == nil || locationName!.isEmpty) ? "No Location" : locationName!
+//                
+//                let galleryImage = GalleryImage(
+//                    id: imageRow[dbHandler.imageTable[dbHandler.imageId]],
+//                    path: imageRow[dbHandler.imageTable[dbHandler.imagePath]]
+//                )
+//                
+//                if result[key] == nil {
+//                    result[key] = [galleryImage]
+//                } else {
+//                    result[key]?.append(galleryImage)
+//                }
+//            }
+//            
+//            return result.isEmpty ? nil : result
+//            
+//        } catch {
+//            print("Error grouping images by location: \(error)")
+//            return nil
+//        }
+//    }
+
 
 }

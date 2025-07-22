@@ -130,6 +130,19 @@ class DBHandler: ObservableObject{
     let linkHisIsActive = Expression<Bool>("is_active")
     let linkHisChangedAt = Expression<String?>("changed_at")
     
+    
+//    Create a New Table for Custom Folders:
+    let customFolderTable = Table("custom_folder")
+    let folderId = Expression<Int>("id")
+    let folderName = Expression<String>("name")       // e.g. "Favorites", "Birthday 2023"
+    let folderCreatedAt = Expression<String>("created_at") // Optional
+
+//    Create a Link Table between Folders and Images (Many-to-Many):
+    let imageFolderTable = Table("image_folder")
+    let imageFolderImageId = Expression<Int>("image_id")
+    let imageFolderFolderId = Expression<Int>("folder_id")
+        
+    
     init() {
         connectToDatabase()
         createTables()
